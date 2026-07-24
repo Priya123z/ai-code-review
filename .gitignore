@@ -1,0 +1,20 @@
+# secrets — never commit the API key
+.env
+*.env
+!.env.example
+
+# python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# local scan output (the committed demo lives in sample-report/)
+/report/
+.DS_Store

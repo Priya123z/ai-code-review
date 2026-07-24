@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aiqa-pipeline-report"
+version = "0.1.0"
+description = "AI QA Copilot for CI/CD — scans code, finds defects, generates tests, and renders a shareable report."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "Priya Bhagoriya", email = "prbhagoriya20@gmail.com" }]
+keywords = ["qa", "testing", "ai", "llm", "ci-cd", "code-review", "playwright", "pytest"]
+dependencies = [
+  "requests>=2.28",
+  "pydantic>=2.5",
+  "jinja2>=3.1",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.4", "pytest-cov>=4.1"]
+
+[project.scripts]
+aiqa = "aiqa.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/Priya123z/AI-pipeline-report"
+Portfolio = "https://priya123z.github.io"
+
+[tool.setuptools.packages.find]
+include = ["aiqa*"]
+
+[tool.setuptools.package-data]
+aiqa = ["templates/*.j2"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

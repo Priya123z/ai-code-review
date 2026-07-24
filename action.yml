@@ -1,0 +1,49 @@
+name: "aiqa — AI QA Pipeline Report"
+description: "Scan code with an LLM, surface defects & risks, generate tests, and produce an HTML/JSON report."
+author: "Priya Bhagoriya"
+branding:
+  icon: "check-circle"
+  color: "purple"
+
+inputs:
+  target:
+    description: "File or directory to analyze."
+    required: false
+    default: "."
+  out:
+    description: "Output directory for the report."
+    required: false
+    default: "report"
+  model:
+    description: "OpenRouter model slug (overrides AIQA_MODEL)."
+    required: false
+    default: ""
+  diff:
+    description: "Only analyze files changed vs the diff base."
+    required: false
+    default: "false"
+  fail-on-gate:
+    description: "Fail the job if the quality gate fails (new criticals / too many highs)."
+    required: false
+    default: "false"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+
+    - name: Install aiqa
+      shell: bash
+      run: pip install "${{ github.action_path }}"
+
+    - name: Run aiqa scan
+      shell: bash
+      run: |
+        ARGS="${{ inputs.target }} --out ${{ inputs.out }}"
+        [ -n "${{ inputs.model }}" ] && ARGS="$ARGS --model ${{ inputs.model }}"
+        [ "${{ inputs.diff }}" = "true" ] && ARGS="$ARGS --diff"
+        [ "${{ inputs.fail-on-gate }}" = "true" ] && ARGS="$ARGS --fail-on-gate"
+        aiqa scan $ARGS

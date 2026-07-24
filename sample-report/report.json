@@ -1,0 +1,132 @@
+{
+  "project": "shopping_cart (demo)",
+  "model": "deepseek/deepseek-chat-v3.1",
+  "generated_at": "2026-07-24T16:39:13.685430+00:00",
+  "commit": "",
+  "files": [
+    {
+      "path": "cart.py",
+      "language": "python",
+      "findings": [
+        {
+          "title": "Mutable default argument in constructor",
+          "severity": "high",
+          "category": "bug",
+          "file": "cart.py",
+          "line": 11,
+          "detail": "Using a mutable list as default argument causes all ShoppingCart instances to share the same items list when no argument is provided, leading to data corruption",
+          "recommendation": "Change to `def __init__(self, items=None): self.items = items if items is not None else []`",
+          "confidence": 1.0
+        },
+        {
+          "title": "Potential division by zero in average_item_price",
+          "severity": "critical",
+          "category": "reliability",
+          "file": "cart.py",
+          "line": 22,
+          "detail": "Calling average_item_price() on an empty cart will raise ZeroDivisionError, crashing the application",
+          "recommendation": "Add check: `if not self.items: return 0.0` before the division",
+          "confidence": 1.0
+        },
+        {
+          "title": "Missing input validation in add_item method",
+          "severity": "medium",
+          "category": "reliability",
+          "file": "cart.py",
+          "line": 15,
+          "detail": "No validation for negative prices, negative quantities, or empty names allows invalid data into the cart",
+          "recommendation": "Add validation: check price > 0, qty > 0, and name is non-empty string",
+          "confidence": 0.9
+        },
+        {
+          "title": "Potential None reference in checkout function",
+          "severity": "high",
+          "category": "reliability",
+          "file": "cart.py",
+          "line": 32,
+          "detail": "If user parameter is None, accessing user.name will raise AttributeError",
+          "recommendation": "Add null check: `if user is None: raise ValueError(\"User cannot be None\")`",
+          "confidence": 0.9
+        },
+        {
+          "title": "Floating-point arithmetic for monetary calculations",
+          "severity": "medium",
+          "category": "reliability",
+          "file": "cart.py",
+          "line": 18,
+          "detail": "Using float for money calculations can lead to rounding errors and precision loss",
+          "recommendation": "Use Decimal type for monetary values or work with integers (cents)",
+          "confidence": 0.8
+        },
+        {
+          "title": "Unsafe coupon application without validation",
+          "severity": "medium",
+          "category": "reliability",
+          "file": "cart.py",
+          "line": 25,
+          "detail": "No validation on coupon parameter (could be None) or coupon percentage (could be negative or >100)",
+          "recommendation": "Add validation for coupon existence and percentage range (0-100)",
+          "confidence": 0.9
+        },
+        {
+          "title": "Potential None return from find_item not handled by callers",
+          "severity": "medium",
+          "category": "reliability",
+          "file": "cart.py",
+          "line": 29,
+          "detail": "find_item returns None when item not found, but callers might not check for None before accessing the result",
+          "recommendation": "Consider raising an exception for not found items or document the None return clearly",
+          "confidence": 0.8
+        }
+      ],
+      "suggested_tests": [
+        {
+          "title": "Test empty cart average price handling",
+          "rationale": "Prevent division by zero crashes when calculating average on empty carts",
+          "target_file": "cart.py",
+          "scenario": {
+            "name": "Handling empty cart average price calculation",
+            "steps": [
+              "Given an empty shopping cart",
+              "When calculating the average item price",
+              "Then the method should return 0.0 without crashing"
+            ]
+          },
+          "pytest_skeleton": "def test_average_price_empty_cart():\n    cart = ShoppingCart()\n    assert cart.average_item_price() == 0.0"
+        },
+        {
+          "title": "Test mutable default argument isolation",
+          "rationale": "Ensure cart instances don't share items list due to mutable default argument",
+          "target_file": "cart.py",
+          "scenario": {
+            "name": "Cart instances should have independent item lists",
+            "steps": [
+              "Given two shopping carts created with default constructor",
+              "When adding an item to the first cart",
+              "Then the second cart should remain empty"
+            ]
+          },
+          "pytest_skeleton": "def test_cart_instance_isolation():\n    cart1 = ShoppingCart()\n    cart2 = ShoppingCart()\n    cart1.add_item(\"test\", 10, 1)\n    assert len(cart2.items) == 0"
+        },
+        {
+          "title": "Test coupon validation and application",
+          "rationale": "Ensure coupons are properly validated and applied without unexpected behavior",
+          "target_file": "cart.py",
+          "scenario": {
+            "name": "Applying valid and invalid coupons",
+            "steps": [
+              "Given a cart with items totaling $100",
+              "When applying a 20% coupon",
+              "Then the discounted total should be $80",
+              "When applying a 150% coupon",
+              "Then an error should be raised"
+            ]
+          },
+          "pytest_skeleton": "def test_coupon_application():\n    cart = ShoppingCart()\n    cart.add_item(\"item\", 100, 1)\n    # Test valid coupon\n    # Test invalid coupon percentages"
+        }
+      ],
+      "summary": "The file contains multiple critical defects including potential crashes, data corruption issues, and missing input validation that require immediate attention."
+    }
+  ],
+  "notes": "Prompt defects-v1. 1 file(s) analyzed."
+}
