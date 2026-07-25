@@ -158,26 +158,6 @@ Everything is env-overridable so CI stays declarative:
 | `AIQA_MAX_CRITICAL` | `0` | Criticals the gate tolerates. |
 | `AIQA_MAX_HIGH` | `3` | Highs the gate tolerates. |
 
-## Roadmap
-
-- [x] Cross-file (RAG-lite) context for integration defects
-- [x] Test generation to real `.feature` + pytest files
-- [x] Self-healing locators (`aiqa heal`)
-- [ ] Inline PR review comments anchored to exact lines
-- [ ] SARIF output for GitHub code-scanning
-- [ ] Multi-language analyzers (JS/TS, Java)
-- [ ] Historical risk-score trend on the Pages dashboard
-
-## Why I built this
-
-I'm a QA automation engineer. The most valuable thing I do isn't writing tests — it's
-knowing *which* test would have caught the bug. This project encodes that judgment into a
-pipeline: not "let AI write my tests," but a structured, validated, gate-able system where
-the LLM does the boilerplate and the engineer keeps the judgment.
-
-**Built by [Priya Bhagoriya](https://priya123z.github.io)** — QA Automation Engineer & SDET ·
-[LinkedIn](https://linkedin.com/in/priya-bhagoriya) · [GitHub](https://github.com/Priya123z)
-
 ## License
 
 [MIT](LICENSE) © 2026 Priya Bhagoriya
