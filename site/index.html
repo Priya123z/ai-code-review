@@ -4,59 +4,63 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>aiqa — AI QA Copilot for CI/CD</title>
-<meta name="description" content="Drop-in AI pipeline that reviews code on every push, finds defects and risks, generates test cases, and publishes a shareable HTML report. By Priya Bhagoriya." />
+<meta name="description" content="Drop-in AI pipeline that reviews code on every push, finds defects across files, generates real tests, and self-heals broken locators. Publishes a shareable report. By Priya Bhagoriya." />
 <meta property="og:title" content="aiqa — AI QA Copilot for CI/CD" />
-<meta property="og:description" content="AI-powered defect detection & test generation in your pipeline. Free, open source, self-hostable." />
+<meta property="og:description" content="AI-powered defect detection, test generation, and self-healing locators in your pipeline. Free, open source." />
 <meta property="og:type" content="website" />
 <style>
   :root{
-    --bg:#0b0e14;--panel:#141925;--line:#242c3d;--text:#e6e9ef;--muted:#95a0b3;
-    --accent:#7c5cff;--accent2:#22d3ee;--green:#4ade80;
+    --bg:#f8f7ff;--panel:#ffffff;--panel2:#f3f1ff;--line:#e6e2f7;
+    --text:#2b2545;--muted:#635d87;--faint:#a8a2cc;
+    --accent:#6c5ce7;--accent2:#9381ff;--peach:#e8935f;--green:#1f8f5f;
   }
   *{box-sizing:border-box;margin:0;padding:0}
-  body{background:radial-gradient(1200px 700px at 82% -8%,rgba(124,92,255,.20),transparent),
-       radial-gradient(1000px 600px at -8% 6%,rgba(34,211,238,.13),transparent),var(--bg);
+  a{color:inherit;text-decoration:none}
+  body{background:radial-gradient(1200px 700px at 84% -8%,rgba(147,129,255,.22),transparent),
+       radial-gradient(1000px 600px at -8% 6%,rgba(255,216,190,.40),transparent),var(--bg);
        color:var(--text);font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
        -webkit-font-smoothing:antialiased}
-  a{color:inherit;text-decoration:none}
-  .wrap{max-width:960px;margin:0 auto;padding:0 22px}
   code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
-  /* nav */
+  .wrap{max-width:980px;margin:0 auto;padding:0 22px}
   nav{display:flex;align-items:center;justify-content:space-between;padding:22px 0}
-  .brand{display:flex;gap:11px;align-items:center;font-weight:700}
+  .brand{display:flex;gap:11px;align-items:center;font-weight:800}
   .logo{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent2));
-        display:grid;place-items:center;color:#0b0e14;font-weight:900}
-  .nav-links{display:flex;gap:20px;font-size:14px;color:var(--muted)}
-  .nav-links a:hover{color:var(--text)}
-  /* hero */
-  .hero{padding:70px 0 40px;text-align:center}
-  .pill{display:inline-flex;gap:8px;align-items:center;font-size:12.5px;color:var(--accent2);
-        border:1px solid var(--line);background:var(--panel);padding:6px 13px;border-radius:999px;margin-bottom:22px}
-  h1{font-size:clamp(34px,6vw,56px);line-height:1.05;letter-spacing:-.03em;font-weight:800}
-  h1 .grad{background:linear-gradient(120deg,var(--accent2),var(--accent));-webkit-background-clip:text;background-clip:text;color:transparent}
-  .lede{color:var(--muted);font-size:clamp(16px,2.3vw,20px);max-width:660px;margin:20px auto 0}
+        display:grid;place-items:center;color:#fff;font-weight:900}
+  .nav-links{display:flex;gap:20px;font-size:14px;color:var(--muted);flex-wrap:wrap}
+  .nav-links a:hover{color:var(--accent)}
+  .hero{padding:64px 0 36px;text-align:center}
+  .pill{display:inline-flex;gap:8px;align-items:center;font-size:12.5px;color:var(--accent);font-weight:600;
+        border:1px solid var(--line);background:var(--panel);padding:6px 14px;border-radius:999px;margin-bottom:22px}
+  h1{font-size:clamp(34px,6vw,54px);line-height:1.06;letter-spacing:-.03em;font-weight:800}
+  h1 .grad{background:linear-gradient(120deg,var(--accent),var(--accent2) 50%,var(--peach));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .lede{color:var(--muted);font-size:clamp(16px,2.3vw,20px);max-width:680px;margin:20px auto 0}
   .ctas{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:30px}
-  .btn{padding:12px 22px;border-radius:11px;font-weight:600;font-size:15px;border:1px solid var(--line)}
-  .btn-primary{background:linear-gradient(120deg,var(--accent),var(--accent2));color:#0b0e14;border:none}
-  .btn:hover{transform:translateY(-1px)}
-  /* sections */
-  section{padding:48px 0;border-top:1px solid var(--line)}
-  h2{font-size:13px;text-transform:uppercase;letter-spacing:.14em;color:var(--muted);margin-bottom:22px}
-  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:15px;padding:22px}
+  .btn{padding:12px 22px;border-radius:11px;font-weight:600;font-size:15px;border:1px solid var(--line);transition:transform .2s,box-shadow .2s}
+  .btn-primary{background:linear-gradient(120deg,var(--accent),var(--accent2));color:#fff;border:none}
+  .btn:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(108,92,231,.20)}
+  .metrics{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:34px}
+  .metric{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 22px;min-width:140px}
+  .metric .n{font-size:26px;font-weight:800;color:var(--accent)}
+  .metric .l{font-size:12.5px;color:var(--muted);margin-top:2px}
+  section{padding:46px 0;border-top:1px solid var(--line)}
+  h2{font-size:13px;text-transform:uppercase;letter-spacing:.14em;color:var(--muted);margin-bottom:8px}
+  .sec-lede{color:var(--text);font-size:20px;font-weight:700;letter-spacing:-.01em;margin-bottom:22px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px}
   .card h3{font-size:16px;margin-bottom:8px}
+  .card .skill{display:inline-block;font-size:11px;color:var(--accent);background:var(--panel2);border:1px solid var(--line);
+        border-radius:6px;padding:2px 8px;margin-bottom:10px;font-weight:600}
   .card p{color:var(--muted);font-size:14px}
-  .num{font-size:22px}
-  pre.block{background:#0b0e14;border:1px solid var(--line);border-radius:12px;padding:18px;overflow:auto;font-size:13.5px;color:#c7cddb}
+  .card code{font-size:12.5px;color:var(--accent);background:var(--panel2);padding:1px 6px;border-radius:5px}
+  pre.block{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;overflow:auto;font-size:13.5px;color:var(--text)}
+  pre.block .c{color:var(--muted)}
+  pre.block .k{color:var(--accent)}
+  pre.block .g{color:var(--green)}
   .flow{display:flex;flex-wrap:wrap;gap:10px;align-items:center;color:var(--muted);font-size:14px}
   .flow .step{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 14px;color:var(--text)}
   .flow .arr{color:var(--accent2);font-weight:800}
-  .steps{list-style:none;counter-reset:s}
-  .steps li{counter-increment:s;padding:12px 0 12px 44px;position:relative;border-bottom:1px solid var(--line);color:var(--muted)}
-  .steps li:before{content:counter(s);position:absolute;left:0;top:10px;width:28px;height:28px;border-radius:8px;
-        background:var(--panel);border:1px solid var(--line);display:grid;place-items:center;color:var(--accent2);font-weight:700}
-  .steps li b{color:var(--text)}
   footer{padding:40px 0;border-top:1px solid var(--line);text-align:center;color:var(--muted);font-size:13.5px}
+  footer a{color:var(--accent)}
   .tag{display:inline-block;font-size:12px;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:2px 9px;margin:2px}
 </style>
 </head>
@@ -66,6 +70,7 @@
   <nav>
     <a class="brand" href="#"><span class="logo">◆</span> aiqa</a>
     <div class="nav-links">
+      <a href="#capabilities">Capabilities</a>
       <a href="#how">How it works</a>
       <a href="report/">Live report</a>
       <a href="#use">Use it</a>
@@ -77,24 +82,69 @@
     <span class="pill">◆ AI QA Copilot for CI/CD · open source</span>
     <h1>Ship code. <span class="grad">The AI reviews it.</span></h1>
     <p class="lede">
-      <b>aiqa</b> plugs into your pipeline, reads every changed file with an LLM, and flags real
-      defects, security holes and reliability risks — then writes the tests you're missing and
-      publishes a shareable report. Runs in GitHub Actions. Costs nothing to start.
+      <b>aiqa</b> plugs into your pipeline, reads every changed file with an LLM — <em>with cross-file
+      context</em> — and flags real defects, security holes and reliability risks. Then it writes the
+      tests you're missing, repairs broken UI locators, and publishes a shareable report. Runs in GitHub
+      Actions. Costs nothing to start.
     </p>
     <div class="ctas">
-      <a class="btn btn-primary" href="report/">View a live report →</a>
+      <a class="btn btn-primary" href="report/">See a real report →</a>
       <a class="btn" href="https://github.com/Priya123z/AI-pipeline-report">Star on GitHub</a>
+    </div>
+    <div class="metrics">
+      <div class="metric"><div class="n">21</div><div class="l">real findings, latest run</div></div>
+      <div class="metric"><div class="n">5</div><div class="l">critical caught</div></div>
+      <div class="metric"><div class="n">10</div><div class="l">tests generated</div></div>
+      <div class="metric"><div class="n">3</div><div class="l">files, cross-referenced</div></div>
     </div>
   </header>
 
-  <section id="value">
-    <h2>Why teams use it</h2>
+  <section id="capabilities">
+    <h2>Capabilities</h2>
+    <p class="sec-lede">Four real AI-in-testing capabilities — the workflow from my résumé, shipped.</p>
     <div class="grid">
-      <div class="card"><h3>🐞 Finds defects, not style nits</h3><p>Div-by-zero, mutable defaults, unhandled None, float-money, missing validation — ranked by severity with a fix for each.</p></div>
-      <div class="card"><h3>🧪 Generates the missing tests</h3><p>Every finding comes with a Gherkin scenario and a Pytest skeleton you can paste straight into your suite.</p></div>
-      <div class="card"><h3>🚦 A gate you can trust</h3><p>One weighted <b>risk score</b> and a pass/fail gate — block a PR on new criticals, or just report.</p></div>
-      <div class="card"><h3>💸 Free to run</h3><p>Bring any OpenRouter model, including free ones. Report deploys to GitHub Pages at zero cost.</p></div>
+      <div class="card">
+        <span class="skill">Defect detection · RAG context</span>
+        <h3>🐞 Finds defects across files</h3>
+        <p>Each file is reviewed with a compact map of its sibling modules, so the review catches
+        <em>integration</em> bugs — e.g. "payments never verifies the token that auth issues." Retrieval-augmented
+        context, no vector DB needed.</p>
+      </div>
+      <div class="card">
+        <span class="skill">LLM-assisted test generation</span>
+        <h3>🧪 Writes the missing tests</h3>
+        <p>Every gap becomes a Gherkin <code>.feature</code> and a runnable pytest skeleton.
+        <code>aiqa gen-tests</code> writes them to disk — <a href="report/generated_tests/" style="color:var(--accent)">real files</a> you commit, not screenshots.</p>
+      </div>
+      <div class="card">
+        <span class="skill">Self-healing test concepts</span>
+        <h3>🔧 Repairs broken locators</h3>
+        <p><code>aiqa heal</code> takes a selector that stopped matching and the current DOM, and returns a
+        resilient Playwright locator — preferring role / label / test-id over brittle CSS.</p>
+      </div>
+      <div class="card">
+        <span class="skill">Prompt engineering · quality gate</span>
+        <h3>🚦 A gate you can trust</h3>
+        <p>Versioned prompts, Pydantic-validated output, and one weighted <code>risk_score</code> with a
+        pass/fail gate. Block a PR on new criticals, or just report.</p>
+      </div>
     </div>
+  </section>
+
+  <section id="selfheal">
+    <h2>Self-healing, for real</h2>
+    <p class="sec-lede">A broken selector, the live DOM, a resilient fix — produced by <code>aiqa heal</code>.</p>
+    <pre class="block"><span class="c"># The test used to click "#pay-now-btn". A redesign removed that id.</span>
+<span class="k">$</span> aiqa heal --selector <span class="g">"#pay-now-btn"</span> --html checkout.html \
+           --desc <span class="g">"the button that submits the payment"</span>
+
+{
+  <span class="k">"found"</span>: true,
+  <span class="k">"strategy"</span>: <span class="g">"test_id"</span>,
+  <span class="k">"playwright"</span>: <span class="g">"page.get_by_test_id('submit-payment')"</span>,
+  <span class="k">"confidence"</span>: 0.95,
+  <span class="k">"reasoning"</span>: <span class="g">"The button has a stable test id matching the payment intent."</span>
+}</pre>
   </section>
 
   <section id="how">
@@ -102,42 +152,47 @@
     <div class="flow">
       <span class="step">Push / PR</span><span class="arr">→</span>
       <span class="step">Collect changed files</span><span class="arr">→</span>
+      <span class="step">+ cross-file context</span><span class="arr">→</span>
       <span class="step">LLM review</span><span class="arr">→</span>
       <span class="step">Pydantic-validated findings</span><span class="arr">→</span>
       <span class="step">HTML + JSON report</span><span class="arr">→</span>
-      <span class="step">Pages / PR comment</span>
+      <span class="step">Pages / PR comment / gate</span>
     </div>
     <p style="color:var(--muted);margin-top:18px">
       Every LLM response is validated through Pydantic before it can reach a report — malformed or
-      invented output fails at the boundary instead of poisoning results a human later trusts.
+      invented output fails at the boundary instead of poisoning results a human later trusts. The full
+      test suite runs green with <b>no API key</b> because the LLM client is mocked.
     </p>
   </section>
 
   <section id="use">
     <h2>Use it in 60 seconds</h2>
-    <ol class="steps">
-      <li><b>As a CLI</b> — <code>pip install -e .</code> then <code>aiqa scan ./src --out report/</code></li>
-      <li><b>As a GitHub Action</b> — add the secret <code>OPENROUTER_API_KEY</code> and drop the <code>uses:</code> step into your workflow</li>
-      <li><b>As a Python library</b> — <code>from aiqa.core.pipeline import run</code> and wire it into your own tooling</li>
-    </ol>
-    <pre class="block"># GitHub Actions
+    <pre class="block"><span class="c"># GitHub Actions — add the OPENROUTER_API_KEY secret, then:</span>
 - uses: Priya123z/AI-pipeline-report@v1
   with:
     target: ./src
-    fail-on-gate: "true"
+    diff: <span class="g">"true"</span>            <span class="c"># only review files changed in the PR</span>
+    fail-on-gate: <span class="g">"true"</span>    <span class="c"># fail the build on new criticals</span>
   env:
-    OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}</pre>
+    OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+
+<span class="c"># Or locally:</span>
+<span class="k">$</span> pip install -e .
+<span class="k">$</span> aiqa scan ./src --emit-tests generated_tests/
+<span class="k">$</span> aiqa gen-tests ./src        <span class="c"># just the tests</span>
+<span class="k">$</span> aiqa heal --selector ... --html page.html   <span class="c"># self-heal a locator</span></pre>
     <div style="margin-top:18px">
       <span class="tag">Python</span><span class="tag">Pydantic v2</span><span class="tag">Pytest</span>
       <span class="tag">Jinja2</span><span class="tag">OpenRouter</span><span class="tag">GitHub Actions</span>
+      <span class="tag">Playwright-ready locators</span>
     </div>
   </section>
 
   <footer>
-    Built by <a style="color:var(--accent2)" href="https://priya123z.github.io">Priya Bhagoriya</a> ·
-    QA Automation Engineer &amp; SDET ·
-    <a style="color:var(--accent2)" href="https://github.com/Priya123z/AI-pipeline-report">source</a> ·
-    <a style="color:var(--accent2)" href="https://linkedin.com/in/priya-bhagoriya">LinkedIn</a>
+    Built by <a href="https://priya123z.github.io">Priya Bhagoriya</a> — QA Automation Engineer &amp; SDET ·
+    <a href="https://github.com/Priya123z/AI-pipeline-report">source</a> ·
+    <a href="https://linkedin.com/in/priya-bhagoriya">LinkedIn</a> ·
+    <a href="https://priya123z.github.io/Priya_Bhagoriya_Resume.pdf">résumé</a>
   </footer>
 </div>
 </body>

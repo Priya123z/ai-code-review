@@ -35,12 +35,15 @@ tests to prevent regressions — as a report you can share with the whole team.
 
 | | |
 |---|---|
-| 🐞 **Defect detection** | Bugs, security holes, performance traps, reliability & maintainability risks — each with severity, line number, and a concrete fix. |
-| 🧪 **Test generation** | Every gap comes with a Gherkin scenario *and* a runnable Pytest skeleton. |
+| 🐞 **Defect detection (cross-file)** | Bugs, security holes, performance traps, reliability & maintainability risks — each with severity, line number, and a concrete fix. Each file is reviewed **with a map of its sibling modules**, so integration defects surface too (e.g. *"payments never verifies the token that auth issues"*). |
+| 🧪 **Test generation to real files** | Every gap becomes a Gherkin `.feature` **and** a runnable pytest skeleton — written to disk with `aiqa gen-tests` or `--emit-tests`, not just shown. |
+| 🔧 **Self-healing locators** | `aiqa heal` repairs a broken selector against the current DOM and returns a resilient, Playwright-ready locator (role / label / test-id first). |
 | 🚦 **Quality gate** | A single weighted **risk score** + a pass/fail gate. Block PRs on new criticals, or just report. |
 | 📊 **Shareable report** | Self-contained HTML + machine-readable JSON. Deploys to GitHub Pages for free. |
 | 🔌 **Three ways to run** | CLI, reusable GitHub Action, or import it as a Python library. |
 | 💸 **Zero-cost default** | Bring any [OpenRouter](https://openrouter.ai) model, including free ones. |
+
+> **A real run.** Scanning the bundled 3-file demo API ([`examples/flask_shop`](examples/flask_shop)) produced **21 findings (5 critical, 7 high)** across security, reliability and bug categories, **10 suggested tests**, and a failed quality gate — see the [live report](https://priya123z.github.io/AI-pipeline-report/report/). Nothing in it is hand-written.
 
 ## Architecture
 
@@ -66,16 +69,20 @@ the pipeline can't tell the difference.
 
 ```
 aiqa/
-├── cli.py                  # `aiqa scan` entry point
+├── cli.py                  # `aiqa scan | gen-tests | heal` entry point
 ├── core/
 │   ├── config.py           # env-driven config (model, thresholds, filters)
 │   ├── collector.py        # full-tree or git-diff file collection
-│   └── pipeline.py         # orchestrator: collect → analyze → assemble → render
+│   └── pipeline.py         # orchestrator: collect → context → analyze → render
 ├── providers/openrouter.py # the only code that touches HTTP (retries, JSON extraction)
-├── analyzers/defects.py    # versioned prompts + LLM output → Pydantic
+├── analyzers/
+│   ├── context.py          # RAG-lite: sibling-module signatures → cross-file awareness
+│   ├── defects.py          # versioned prompts + LLM output → Pydantic
+│   └── selfheal.py         # broken selector + DOM → resilient Playwright locator
 ├── report/
 │   ├── schema.py           # Finding, SuggestedTest, Report (risk score + gate)
-│   └── render.py           # Report → HTML + JSON
+│   ├── render.py           # Report → HTML + JSON
+│   └── emit.py             # suggested tests → real .feature + pytest files
 └── templates/report.html.j2
 ```
 
@@ -90,9 +97,16 @@ pip install -e ".[dev]"
 cp .env.example .env        # then paste your OpenRouter key into .env
 export OPENROUTER_API_KEY=sk-or-...
 
-# scan the bundled buggy demo module
-aiqa scan examples/shopping_cart --out report/
+# scan the bundled demo API, and also write the generated tests to disk
+aiqa scan examples/flask_shop --out report/ --emit-tests generated_tests/
 open report/report.html     # a real report — see /sample-report for a committed copy
+
+# generate ONLY the tests
+aiqa gen-tests examples/flask_shop --out generated_tests/
+
+# self-heal a broken UI selector against the current DOM
+aiqa heal --selector "#pay-now-btn" --html examples/selfheal_demo/checkout.html \
+          --desc "the button that submits the payment"
 ```
 
 Run the tests (no key needed — the LLM is fully mocked):
@@ -146,10 +160,12 @@ Everything is env-overridable so CI stays declarative:
 
 ## Roadmap
 
+- [x] Cross-file (RAG-lite) context for integration defects
+- [x] Test generation to real `.feature` + pytest files
+- [x] Self-healing locators (`aiqa heal`)
 - [ ] Inline PR review comments anchored to exact lines
 - [ ] SARIF output for GitHub code-scanning
 - [ ] Multi-language analyzers (JS/TS, Java)
-- [ ] Auto-write generated tests into a PR branch
 - [ ] Historical risk-score trend on the Pages dashboard
 
 ## Why I built this

@@ -1,0 +1,8 @@
+{
+  "found": true,
+  "strategy": "test_id",
+  "locator": "submit-payment",
+  "playwright": "page.get_by_test_id('submit-payment')",
+  "confidence": 0.95,
+  "reasoning": "The button has a clear test ID that matches the payment submission intent and is the most resilient option."
+}

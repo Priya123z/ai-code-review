@@ -9,6 +9,7 @@ import os
 import subprocess
 from typing import Callable, List, Optional
 
+from ..analyzers.context import build_repo_context
 from ..analyzers.defects import PROMPT_VERSION, analyze_file
 from ..providers.openrouter import LLMClient
 from ..report.render import write_report
@@ -48,7 +49,8 @@ def run(
     for i, src in enumerate(sources, 1):
         say(f"[{i}/{len(sources)}] Reviewing {src.path} …")
         try:
-            file_reports.append(analyze_file(client, src))
+            repo_context = build_repo_context(sources, skip_path=src.path)
+            file_reports.append(analyze_file(client, src, repo_context=repo_context))
         except Exception as exc:  # keep going; note the failure in the report
             file_reports.append(
                 FileReport(path=src.path, language=src.language, summary=f"Skipped: {exc}")

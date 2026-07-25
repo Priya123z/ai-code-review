@@ -28,7 +28,7 @@ You NEVER invent issues to look thorough — if the code is clean, you say so wi
 You always answer with a single JSON object and nothing else."""
 
 USER_TEMPLATE = """Review this {language} file: `{path}`.
-
+{context_block}
 Report:
 1. `findings`: real defects, bugs, security issues, performance traps, reliability
    or maintainability risks. Each finding needs: title, severity
@@ -97,8 +97,18 @@ def _coerce_tests(raw: list, path: str) -> List[SuggestedTest]:
     return out
 
 
-def analyze_file(client: LLMClient, src: SourceFile) -> FileReport:
-    user = USER_TEMPLATE.format(language=src.language, path=src.path, content=src.content)
+def analyze_file(client: LLMClient, src: SourceFile, repo_context: str = "") -> FileReport:
+    context_block = ""
+    if repo_context.strip():
+        context_block = (
+            "\nFor cross-file awareness, here are the other modules in this change "
+            "set (signatures only). Use them to catch integration defects, but only "
+            "report issues that are actually in the file under review:\n"
+            f"```\n{repo_context}\n```\n"
+        )
+    user = USER_TEMPLATE.format(
+        language=src.language, path=src.path, content=src.content, context_block=context_block
+    )
     data = client.chat_json(SYSTEM, user)
     findings = _coerce_findings(data.get("findings", []), src.path)
     tests = _coerce_tests(data.get("suggested_tests", []), src.path)

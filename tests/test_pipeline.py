@@ -4,7 +4,7 @@ from aiqa.core.config import Config
 from aiqa.core.pipeline import run, run_and_write
 from aiqa.report.render import render_html
 
-EXAMPLE = os.path.join(os.path.dirname(os.path.dirname(__file__)), "examples", "shopping_cart")
+EXAMPLE = os.path.join(os.path.dirname(os.path.dirname(__file__)), "examples", "flask_shop")
 
 
 def test_pipeline_runs_with_fake_client(fake_client):

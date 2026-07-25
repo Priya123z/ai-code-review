@@ -44,7 +44,8 @@ jobs:
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
         run: |
-          aiqa scan examples/shopping_cart --out report --project "shopping_cart (CI demo)"
+          aiqa scan examples/flask_shop --out report --project "flask_shop (CI demo)" \
+            --emit-tests report/generated_tests
           {
             echo "## 🤖 aiqa report"
             echo ""
