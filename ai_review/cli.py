@@ -68,6 +68,14 @@ def _cfg_from_args(a: argparse.Namespace) -> Config:
 
 
 def main(argv=None) -> int:
+    # A redirected stdout is block buffered, so in a CI log nothing appeared until the
+    # process exited: the per-file progress arrived all at once at the end, and the
+    # warnings below — stderr, which is not buffered — were timestamped ahead of the
+    # summary they refer to. Line buffering makes the output arrive in the order it
+    # was written, and makes a 30-second scan show progress while it runs.
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(line_buffering=True)
+
     args = _build_parser().parse_args(argv)
 
     if args.command == "version":
@@ -107,10 +115,6 @@ def main(argv=None) -> int:
         print(f"  tests      : wrote {counts['features']} .feature + "
               f"{counts['pytest_modules']} pytest file(s) to {args.emit_tests}/")
 
-    # stderr is unbuffered and a redirected stdout is not, so without this the
-    # warnings below land above the summary they refer to in a CI log.
-    sys.stdout.flush()
-
     if report.incomplete:
         print(f"\n! {len(report.failed_files)} of {len(report.files)} file(s) could not be "
               f"reviewed:", file=sys.stderr)
@@ -137,7 +141,8 @@ def main(argv=None) -> int:
 
 def _require_key(client: BaseClient) -> bool:
     if not client.configured:
-        print("error: OPENROUTER_API_KEY is not set.", file=sys.stderr)
+        print("error: no LLM provider is configured.", file=sys.stderr)
+        print("  export GROQ_API_KEY=gsk_...   (or OPENROUTER_API_KEY=sk-or-...)", file=sys.stderr)
         return False
     return True
 

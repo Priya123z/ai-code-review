@@ -74,7 +74,7 @@
       <a href="#how">How it works</a>
       <a href="report/">Live report</a>
       <a href="#use">Use it</a>
-      <a href="https://github.com/Priya123z/AI-pipeline-report">GitHub</a>
+      <a href="https://github.com/Priya123z/ai-code-review">GitHub</a>
     </div>
   </nav>
 
@@ -89,7 +89,7 @@
     </p>
     <div class="ctas">
       <a class="btn btn-primary" href="report/">See a real report →</a>
-      <a class="btn" href="https://github.com/Priya123z/AI-pipeline-report">Star on GitHub</a>
+      <a class="btn" href="https://github.com/Priya123z/ai-code-review">Star on GitHub</a>
     </div>
     <div class="metrics">
       <div class="metric"><div class="n">16</div><div class="l">real findings, latest run</div></div>
@@ -114,7 +114,7 @@
         <span class="skill">LLM-assisted test generation</span>
         <h3>🧪 Writes the missing tests</h3>
         <p>Every gap becomes a Gherkin <code>.feature</code> and a runnable pytest skeleton.
-        <code>ai-review gen-tests</code> writes them to disk — <a href="report/generated_tests/" style="color:var(--accent)">real files</a> you commit, not screenshots.</p>
+        <code>ai-review gen-tests</code> writes them to disk — <a href="report/generated_tests/cart.feature" style="color:var(--accent)">real files</a> you commit, not screenshots.</p>
       </div>
       <div class="card">
         <span class="skill">Self-healing test concepts</span>
@@ -167,14 +167,14 @@
 
   <section id="use">
     <h2>Use it in 60 seconds</h2>
-    <pre class="block"><span class="c"># GitHub Actions — add the OPENROUTER_API_KEY secret, then:</span>
-- uses: Priya123z/AI-pipeline-report@v1
+    <pre class="block"><span class="c"># GitHub Actions — add the GROQ_API_KEY secret, then:</span>
+- uses: Priya123z/ai-code-review@main
   with:
     target: ./src
     diff: <span class="g">"true"</span>            <span class="c"># only review files changed in the PR</span>
     fail-on-gate: <span class="g">"true"</span>    <span class="c"># fail the build on new criticals</span>
   env:
-    OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+    GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
 
 <span class="c"># Or locally:</span>
 <span class="k">$</span> pip install -e .
@@ -183,14 +183,14 @@
 <span class="k">$</span> ai-review heal --selector ... --html page.html   <span class="c"># self-heal a locator</span></pre>
     <div style="margin-top:18px">
       <span class="tag">Python</span><span class="tag">Pydantic v2</span><span class="tag">Pytest</span>
-      <span class="tag">Jinja2</span><span class="tag">OpenRouter</span><span class="tag">GitHub Actions</span>
+      <span class="tag">Jinja2</span><span class="tag">Groq</span><span class="tag">OpenRouter fallback</span><span class="tag">GitHub Actions</span>
       <span class="tag">Playwright-ready locators</span>
     </div>
   </section>
 
   <footer>
     Built by <a href="https://priya123z.github.io">Priya Bhagoriya</a> — QA Automation Engineer &amp; SDET ·
-    <a href="https://github.com/Priya123z/AI-pipeline-report">source</a> ·
+    <a href="https://github.com/Priya123z/ai-code-review">source</a> ·
     <a href="https://linkedin.com/in/priya-bhagoriya">LinkedIn</a> ·
     <a href="https://priya123z.github.io/Priya_Bhagoriya_Resume.pdf">resume</a>
   </footer>
