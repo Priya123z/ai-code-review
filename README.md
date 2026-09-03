@@ -24,6 +24,32 @@ looks at.
 It is not a replacement for review. It is a first pass that arrives before the
 human one, with the boring findings already written down.
 
+## When you would reach for this
+
+- **Before you open a pull request.** `ai-review scan . --diff` looks only at
+  what you changed. The point is that the boring findings — mutable default,
+  unguarded division, a missing negative-path test — are already written down
+  before a human spends attention on them.
+- **On a repository nobody has reviewed in a year.** Run it over a directory and
+  read the report as a triage list. It is unusually good at spotting where tests
+  do not exist, because that is a structural question rather than a judgement
+  one.
+- **When a Playwright suite starts failing after a frontend redesign.**
+  `ai-review heal` takes the selector that stopped matching plus the current
+  markup and gives you a locator that works, preferring role and label over CSS.
+  Faster than opening devtools for the twelfth time.
+- **As a gate on a repo where nobody reviews test coverage.**
+  `--fail-on-gate` fails the build over a configurable count of critical and
+  high findings. Start with it off and watch what it flags for a week first.
+- **As a shared service for a team.** `server/` is the same three capabilities
+  over HTTP, so one instance answers for everyone rather than each person
+  installing a CLI and finding their own key.
+
+Where **not** to use it: as the review. It has no idea what your product is
+supposed to do, so it cannot tell you a feature is wrong — only that a line of
+code is likely to behave badly. Treat it as the pass that happens before the
+one that matters.
+
 ## What it does
 
 | | |
@@ -162,6 +188,7 @@ the suite once already.
 ```bash
 pip install -e ".[dev]"
 pytest -q          # 45 passed, no API key required
+# last local run: 45 passed
 ```
 
 Covers the provider chain falling through and exhausting, quota refusal and

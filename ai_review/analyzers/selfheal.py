@@ -4,7 +4,7 @@ When a UI test fails because a selector no longer matches, the fix is usually
 mechanical: the element is still on the page, just addressed differently. This
 asks the model to repair a broken selector against the *current* DOM and return
 a resilient, Playwright-ready locator (preferring role/text/test-id over brittle
-CSS paths). It's the "self-healing test" idea from my résumé, scoped to one
+CSS paths). It's the "self-healing test" idea from my resume, scoped to one
 honest, verifiable step — the engineer still reviews the suggestion.
 """
 from __future__ import annotations
