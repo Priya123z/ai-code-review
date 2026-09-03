@@ -99,6 +99,16 @@ def main(argv=None) -> int:
     print(f"ai-review · target={cfg.target}")
     report, paths = run_and_write(cfg, client=client, progress=lambda m: print("  " + m))
 
+    # Write the emitted tests before the summary rather than after it, so the
+    # summary can report them and so every line the run prints to stdout is
+    # contiguous. Printing them after meant a stdout line was still to come once
+    # the warnings below had started, and stdout and stderr are separate pipes —
+    # a CI log interleaves them by read order, not by write order.
+    emitted = None
+    if args.emit_tests:
+        from .report.emit import emit_tests
+        emitted = emit_tests(report, args.emit_tests)
+
     b = report.severity_breakdown
     print("\n── summary ─────────────────────────────")
     print(f"  provider   : {client.served_by} · {client.model}")
@@ -108,12 +118,9 @@ def main(argv=None) -> int:
     print(f"  tests      : {len(report.all_tests)} suggested")
     print(f"  report     : {paths['html']}")
     print(f"  json       : {paths['json']}")
-
-    if args.emit_tests:
-        from .report.emit import emit_tests
-        counts = emit_tests(report, args.emit_tests)
-        print(f"  tests      : wrote {counts['features']} .feature + "
-              f"{counts['pytest_modules']} pytest file(s) to {args.emit_tests}/")
+    if emitted is not None:
+        print(f"  emitted    : {emitted['features']} .feature + "
+              f"{emitted['pytest_modules']} pytest file(s) in {args.emit_tests}/")
 
     if report.incomplete:
         print(f"\n! {len(report.failed_files)} of {len(report.files)} file(s) could not be "
