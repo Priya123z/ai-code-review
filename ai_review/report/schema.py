@@ -10,7 +10,7 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import List, Optional
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, computed_field, field_validator
 
 
 class Severity(str, Enum):
@@ -104,11 +104,13 @@ class Report(BaseModel):
     def count(self, severity: Severity) -> int:
         return sum(1 for f in self.all_findings if f.severity == severity)
 
+    @computed_field
     @property
     def risk_score(self) -> int:
         """Weighted score — the single number a pipeline gate can threshold on."""
         return sum(f.severity.weight for f in self.all_findings)
 
+    @computed_field
     @property
     def severity_breakdown(self) -> dict:
         return {s.value: self.count(s) for s in Severity}
@@ -117,10 +119,17 @@ class Report(BaseModel):
     def failed_files(self) -> List[FileReport]:
         return [fr for fr in self.files if fr.error]
 
+    @computed_field
     @property
     def reviewed_count(self) -> int:
         return len(self.files) - len(self.failed_files)
 
+    @computed_field
+    @property
+    def failed_count(self) -> int:
+        return len(self.failed_files)
+
+    @computed_field
     @property
     def incomplete(self) -> bool:
         """True when at least one file could not be reviewed."""

@@ -107,6 +107,10 @@ def main(argv=None) -> int:
         print(f"  tests      : wrote {counts['features']} .feature + "
               f"{counts['pytest_modules']} pytest file(s) to {args.emit_tests}/")
 
+    # stderr is unbuffered and a redirected stdout is not, so without this the
+    # warnings below land above the summary they refer to in a CI log.
+    sys.stdout.flush()
+
     if report.incomplete:
         print(f"\n! {len(report.failed_files)} of {len(report.files)} file(s) could not be "
               f"reviewed:", file=sys.stderr)
