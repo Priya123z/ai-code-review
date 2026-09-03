@@ -1,6 +1,6 @@
 """Authentication for the demo shop API.
 
-Deliberately imperfect — this is the target `aiqa scan` reviews so the report
+Deliberately imperfect — this is the target `ai-review scan` reviews so the report
 has realistic, varied defects to find (injection, secret handling, weak crypto).
 """
 import sqlite3

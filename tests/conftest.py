@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from aiqa.providers.openrouter import LLMClient
+from ai_review.providers.openrouter import LLMClient
 
 FAKE_RESPONSE = {
     "summary": "Handles the happy path but skips validation and edge cases.",
@@ -47,7 +47,7 @@ class FakeClient(LLMClient):
         super().__init__(api_key="test-key", **kw)
         self._payload = payload if payload is not None else FAKE_RESPONSE
 
-    def chat(self, system, user):  # noqa: D401
+    def chat(self, system, user, as_json=False):  # noqa: D401
         return "```json\n" + json.dumps(self._payload) + "\n```"
 
 

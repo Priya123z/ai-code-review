@@ -11,7 +11,8 @@ from typing import Callable, List, Optional
 
 from ..analyzers.context import build_repo_context
 from ..analyzers.defects import PROMPT_VERSION, analyze_file
-from ..providers.openrouter import LLMClient
+from ..providers.base import BaseClient
+from ..providers.chain import build_client
 from ..report.render import write_report
 from ..report.schema import FileReport, Report
 from .collector import collect
@@ -33,11 +34,11 @@ def _git_commit(target: str) -> str:
 
 def run(
     cfg: Config,
-    client: Optional[LLMClient] = None,
+    client: Optional[BaseClient] = None,
     progress: Optional[ProgressFn] = None,
 ) -> Report:
     say = progress or (lambda _m: None)
-    client = client or LLMClient(model=cfg.model)
+    client = client or build_client(model=cfg.model)
 
     target_dir = cfg.target if os.path.isdir(cfg.target) else os.path.dirname(cfg.target) or "."
     project = cfg.project_name or os.path.basename(os.path.abspath(target_dir))
@@ -52,8 +53,14 @@ def run(
             repo_context = build_repo_context(sources, skip_path=src.path)
             file_reports.append(analyze_file(client, src, repo_context=repo_context))
         except Exception as exc:  # keep going; note the failure in the report
+            say(f"    could not review {src.path}: {exc}")
             file_reports.append(
-                FileReport(path=src.path, language=src.language, summary=f"Skipped: {exc}")
+                FileReport(
+                    path=src.path,
+                    language=src.language,
+                    summary=f"Not reviewed: {exc}",
+                    error=str(exc),
+                )
             )
 
     report = Report(
@@ -68,7 +75,7 @@ def run(
     return report
 
 
-def run_and_write(cfg: Config, client: Optional[LLMClient] = None, progress: Optional[ProgressFn] = None):
+def run_and_write(cfg: Config, client: Optional[BaseClient] = None, progress: Optional[ProgressFn] = None):
     report = run(cfg, client=client, progress=progress)
     paths = write_report(report, cfg.out_dir)
     return report, paths

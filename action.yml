@@ -1,4 +1,4 @@
-name: "aiqa — AI QA Pipeline Report"
+name: "AI code review"
 description: "Scan code with an LLM, surface defects & risks, generate tests, and produce an HTML/JSON report."
 author: "Priya Bhagoriya"
 branding:
@@ -15,7 +15,7 @@ inputs:
     required: false
     default: "report"
   model:
-    description: "OpenRouter model slug (overrides AIQA_MODEL)."
+    description: "OpenRouter model slug (overrides AI_REVIEW_MODEL)."
     required: false
     default: ""
   diff:
@@ -35,15 +35,15 @@ runs:
       with:
         python-version: "3.11"
 
-    - name: Install aiqa
+    - name: Install
       shell: bash
       run: pip install "${{ github.action_path }}"
 
-    - name: Run aiqa scan
+    - name: Run ai-review scan
       shell: bash
       run: |
         ARGS="${{ inputs.target }} --out ${{ inputs.out }}"
         [ -n "${{ inputs.model }}" ] && ARGS="$ARGS --model ${{ inputs.model }}"
         [ "${{ inputs.diff }}" = "true" ] && ARGS="$ARGS --diff"
         [ "${{ inputs.fail-on-gate }}" = "true" ] && ARGS="$ARGS --fail-on-gate"
-        aiqa scan $ARGS
+        ai-review scan $ARGS

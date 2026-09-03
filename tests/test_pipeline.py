@@ -1,8 +1,8 @@
 import os
 
-from aiqa.core.config import Config
-from aiqa.core.pipeline import run, run_and_write
-from aiqa.report.render import render_html
+from ai_review.core.config import Config
+from ai_review.core.pipeline import run, run_and_write
+from ai_review.report.render import render_html
 
 EXAMPLE = os.path.join(os.path.dirname(os.path.dirname(__file__)), "examples", "flask_shop")
 
@@ -21,7 +21,7 @@ def test_run_and_write_creates_artifacts(fake_client, tmp_path):
     for key in ("json", "html", "index"):
         assert os.path.exists(paths[key])
     html = open(paths["html"], encoding="utf-8").read()
-    assert "AI QA Pipeline Report" in html
+    assert "Code review report" in html
     assert "Division by zero" in html
 
 

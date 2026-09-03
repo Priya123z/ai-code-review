@@ -1,7 +1,7 @@
 """Command line entry point.
 
-    aiqa scan ./src --out report/
-    aiqa scan . --diff --fail-on-gate
+    ai-review scan ./src --out report/
+    ai-review scan . --diff --fail-on-gate
 """
 from __future__ import annotations
 
@@ -10,17 +10,18 @@ import sys
 
 from .core.config import Config
 from .core.pipeline import run_and_write
-from .providers.openrouter import LLMClient
+from .providers.chain import build_client
+from .providers.base import BaseClient
 
 
 def _build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(prog="aiqa", description="AI QA Copilot — scan code, find defects, generate tests, render a report.")
+    p = argparse.ArgumentParser(prog="ai-review", description="Scan code with an LLM: find defects, suggest tests, render a report.")
     sub = p.add_subparsers(dest="command", required=True)
 
     scan = sub.add_parser("scan", help="Analyze a path and write an HTML/JSON report.")
     scan.add_argument("target", nargs="?", default=".", help="File or directory to analyze (default: .)")
     scan.add_argument("--out", default="report", help="Output directory (default: report/)")
-    scan.add_argument("--model", default=None, help="OpenRouter model slug (or set AIQA_MODEL)")
+    scan.add_argument("--model", default=None, help="OpenRouter model slug (or set AI_REVIEW_MODEL)")
     scan.add_argument("--diff", action="store_true", help="Only analyze files changed vs the diff base")
     scan.add_argument("--diff-base", default=None, help="Git ref to diff against (default: origin/main)")
     scan.add_argument("--max-files", type=int, default=None, help="Cap number of files analyzed")
@@ -81,17 +82,18 @@ def main(argv=None) -> int:
         return _cmd_gen_tests(args)
 
     cfg = _cfg_from_args(args)
-    client = LLMClient(model=cfg.model)
+    client = build_client(model=cfg.model)
     if not client.configured:
-        print("error: OPENROUTER_API_KEY is not set.", file=sys.stderr)
-        print("  export OPENROUTER_API_KEY=sk-or-...   (or add it as a GitHub Actions secret)", file=sys.stderr)
+        print("error: no LLM provider is configured.", file=sys.stderr)
+        print("  export GROQ_API_KEY=gsk_...   (or OPENROUTER_API_KEY=sk-or-...)", file=sys.stderr)
         return 2
 
-    print(f"aiqa · model={client.model} · target={cfg.target}")
+    print(f"ai-review · target={cfg.target}")
     report, paths = run_and_write(cfg, client=client, progress=lambda m: print("  " + m))
 
     b = report.severity_breakdown
     print("\n── summary ─────────────────────────────")
+    print(f"  provider   : {client.served_by} · {client.model}")
     print(f"  risk score : {report.risk_score}")
     print(f"  findings   : {len(report.all_findings)}  "
           f"(critical {b['critical']}, high {b['high']}, medium {b['medium']}, low {b['low']})")
@@ -105,6 +107,18 @@ def main(argv=None) -> int:
         print(f"  tests      : wrote {counts['features']} .feature + "
               f"{counts['pytest_modules']} pytest file(s) to {args.emit_tests}/")
 
+    if report.incomplete:
+        print(f"\n! {len(report.failed_files)} of {len(report.files)} file(s) could not be "
+              f"reviewed:", file=sys.stderr)
+        for fr in report.failed_files[:5]:
+            print(f"    {fr.path}: {fr.error}", file=sys.stderr)
+
+    # Nothing was reviewed, so there is nothing to say about the code. Exiting 0 here
+    # would let a provider outage look like a passing gate.
+    if report.files and report.reviewed_count == 0:
+        print("\n✕ no files could be reviewed — not reporting a result.", file=sys.stderr)
+        return 2
+
     gate_failed = report.gate_fails(cfg.max_critical, cfg.max_high)
     if gate_failed:
         print(f"\n✕ quality gate FAILED (critical>{cfg.max_critical} or high>{cfg.max_high})",
@@ -117,7 +131,7 @@ def main(argv=None) -> int:
     return 0
 
 
-def _require_key(client: LLMClient) -> bool:
+def _require_key(client: BaseClient) -> bool:
     if not client.configured:
         print("error: OPENROUTER_API_KEY is not set.", file=sys.stderr)
         return False
@@ -129,13 +143,13 @@ def _cmd_gen_tests(args) -> int:
     from .core.pipeline import run
     from .report.emit import emit_tests
 
-    client = LLMClient(model=args.model or Config().model)
+    client = build_client(model=args.model or Config().model)
     if not _require_key(client):
         return 2
     cfg = Config(target=args.target)
     if args.max_files is not None:
         cfg.max_files = args.max_files
-    print(f"aiqa gen-tests · model={client.model} · target={cfg.target}")
+    print(f"ai-review gen-tests · model={client.model} · target={cfg.target}")
     report = run(cfg, client=client, progress=lambda m: print("  " + m))
     counts = emit_tests(report, args.out)
     print(f"\n✓ wrote {counts['features']} .feature + {counts['pytest_modules']} "
@@ -149,7 +163,7 @@ def _cmd_heal(args) -> int:
     from .analyzers.selfheal import heal_locator
     from .core.config import Config
 
-    client = LLMClient(model=args.model or Config().model)
+    client = build_client(model=args.model or Config().model)
     if not _require_key(client):
         return 2
     try:
@@ -157,7 +171,7 @@ def _cmd_heal(args) -> int:
     except OSError as exc:
         print(f"error: cannot read HTML: {exc}", file=sys.stderr)
         return 2
-    print(f"aiqa heal · model={client.model}")
+    print(f"ai-review heal · model={client.model}")
     result = heal_locator(client, args.selector, html, args.desc)
     print(_json.dumps(result.model_dump(), indent=2))
     return 0 if result.found else 1

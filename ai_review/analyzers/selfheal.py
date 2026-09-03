@@ -13,7 +13,7 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
-from ..providers.openrouter import LLMClient
+from ..providers.base import BaseClient
 
 PROMPT_VERSION = "selfheal-v1"
 
@@ -48,7 +48,7 @@ class HealResult(BaseModel):
 
 
 def heal_locator(
-    client: LLMClient, selector: str, html: str, description: str = ""
+    client: BaseClient, selector: str, html: str, description: str = ""
 ) -> HealResult:
     data = client.chat_json(
         SYSTEM,

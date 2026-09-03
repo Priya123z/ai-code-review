@@ -77,6 +77,9 @@ class FileReport(BaseModel):
     findings: List[Finding] = Field(default_factory=list)
     suggested_tests: List[SuggestedTest] = Field(default_factory=list)
     summary: str = ""
+    # Set when the file could not be reviewed at all. Without this a provider outage
+    # looked identical to a clean file: no findings, gate passes.
+    error: str = ""
 
 
 class Report(BaseModel):
@@ -110,5 +113,21 @@ class Report(BaseModel):
     def severity_breakdown(self) -> dict:
         return {s.value: self.count(s) for s in Severity}
 
+    @property
+    def failed_files(self) -> List[FileReport]:
+        return [fr for fr in self.files if fr.error]
+
+    @property
+    def reviewed_count(self) -> int:
+        return len(self.files) - len(self.failed_files)
+
+    @property
+    def incomplete(self) -> bool:
+        """True when at least one file could not be reviewed."""
+        return bool(self.failed_files)
+
     def gate_fails(self, max_critical: int = 0, max_high: int = 3) -> bool:
+        # An incomplete run cannot claim the code is clean.
+        if self.files and self.reviewed_count == 0:
+            return True
         return self.count(Severity.critical) > max_critical or self.count(Severity.high) > max_high

@@ -1,6 +1,6 @@
 import pytest
 
-from aiqa.providers.openrouter import LLMClient, LLMError, extract_json
+from ai_review.providers.openrouter import LLMClient, LLMError, extract_json
 
 
 def test_extract_plain_json():
@@ -29,5 +29,19 @@ def test_unconfigured_client_raises(monkeypatch):
 
 
 def test_model_env_override(monkeypatch):
-    monkeypatch.setenv("AIQA_MODEL", "some/model:free")
+    monkeypatch.setenv("AI_REVIEW_MODEL", "some/model:free")
     assert LLMClient(api_key="k").model == "some/model:free"
+
+
+def test_explicit_model_beats_the_env_var(monkeypatch):
+    # --model used to lose to AI_REVIEW_MODEL, so exporting it silently changed
+    # what the command line asked for.
+    monkeypatch.setenv("AI_REVIEW_MODEL", "from/env:free")
+    assert LLMClient(api_key="k", model="from/flag:free").model == "from/flag:free"
+
+
+def test_malformed_json_raises_llm_error_not_decode_error():
+    # The chain only catches LLMError. A bare JSONDecodeError escaping here skipped
+    # the fallback to the next provider entirely.
+    with pytest.raises(LLMError):
+        extract_json('{"unterminated": ')

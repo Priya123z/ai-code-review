@@ -10,7 +10,7 @@ from __future__ import annotations
 from typing import List
 
 from ..core.collector import SourceFile
-from ..providers.openrouter import LLMClient
+from ..providers.base import BaseClient
 from ..report.schema import (
     Category,
     FileReport,
@@ -97,7 +97,7 @@ def _coerce_tests(raw: list, path: str) -> List[SuggestedTest]:
     return out
 
 
-def analyze_file(client: LLMClient, src: SourceFile, repo_context: str = "") -> FileReport:
+def analyze_file(client: BaseClient, src: SourceFile, repo_context: str = "") -> FileReport:
     context_block = ""
     if repo_context.strip():
         context_block = (

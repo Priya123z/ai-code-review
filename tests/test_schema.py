@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from aiqa.report.schema import (
+from ai_review.report.schema import (
     Category,
     FileReport,
     Finding,

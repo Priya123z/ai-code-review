@@ -2,11 +2,11 @@
 import json
 import os
 
-from aiqa.analyzers.context import build_repo_context
-from aiqa.analyzers.selfheal import heal_locator
-from aiqa.core.collector import SourceFile
-from aiqa.report.emit import emit_tests
-from aiqa.report.schema import FileReport, GherkinScenario, Report, SuggestedTest
+from ai_review.analyzers.context import build_repo_context
+from ai_review.analyzers.selfheal import heal_locator
+from ai_review.core.collector import SourceFile
+from ai_review.report.emit import emit_tests
+from ai_review.report.schema import FileReport, GherkinScenario, Report, SuggestedTest
 from tests.conftest import FakeClient
 
 

@@ -3,7 +3,7 @@ requires = ["setuptools>=64", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "aiqa-pipeline-report"
+name = "ai-code-review"
 version = "0.1.0"
 description = "AI QA Copilot for CI/CD — scans code, finds defects, generates tests, and renders a shareable report."
 readme = "README.md"
@@ -21,17 +21,17 @@ dependencies = [
 dev = ["pytest>=7.4", "pytest-cov>=4.1"]
 
 [project.scripts]
-aiqa = "aiqa.cli:main"
+ai-review = "ai_review.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/Priya123z/AI-pipeline-report"
 Portfolio = "https://priya123z.github.io"
 
 [tool.setuptools.packages.find]
-include = ["aiqa*"]
+include = ["ai_review*"]
 
 [tool.setuptools.package-data]
-aiqa = ["templates/*.j2"]
+ai_review = ["templates/*.j2"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

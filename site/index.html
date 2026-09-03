@@ -114,12 +114,12 @@
         <span class="skill">LLM-assisted test generation</span>
         <h3>🧪 Writes the missing tests</h3>
         <p>Every gap becomes a Gherkin <code>.feature</code> and a runnable pytest skeleton.
-        <code>aiqa gen-tests</code> writes them to disk — <a href="report/generated_tests/" style="color:var(--accent)">real files</a> you commit, not screenshots.</p>
+        <code>ai-review gen-tests</code> writes them to disk — <a href="report/generated_tests/" style="color:var(--accent)">real files</a> you commit, not screenshots.</p>
       </div>
       <div class="card">
         <span class="skill">Self-healing test concepts</span>
         <h3>🔧 Repairs broken locators</h3>
-        <p><code>aiqa heal</code> takes a selector that stopped matching and the current DOM, and returns a
+        <p><code>ai-review heal</code> takes a selector that stopped matching and the current DOM, and returns a
         resilient Playwright locator — preferring role / label / test-id over brittle CSS.</p>
       </div>
       <div class="card">
@@ -133,9 +133,9 @@
 
   <section id="selfheal">
     <h2>Self-healing, for real</h2>
-    <p class="sec-lede">A broken selector, the live DOM, a resilient fix — produced by <code>aiqa heal</code>.</p>
+    <p class="sec-lede">A broken selector, the live DOM, a resilient fix — produced by <code>ai-review heal</code>.</p>
     <pre class="block"><span class="c"># The test used to click "#pay-now-btn". A redesign removed that id.</span>
-<span class="k">$</span> aiqa heal --selector <span class="g">"#pay-now-btn"</span> --html checkout.html \
+<span class="k">$</span> ai-review heal --selector <span class="g">"#pay-now-btn"</span> --html checkout.html \
            --desc <span class="g">"the button that submits the payment"</span>
 
 {
@@ -178,9 +178,9 @@
 
 <span class="c"># Or locally:</span>
 <span class="k">$</span> pip install -e .
-<span class="k">$</span> aiqa scan ./src --emit-tests generated_tests/
-<span class="k">$</span> aiqa gen-tests ./src        <span class="c"># just the tests</span>
-<span class="k">$</span> aiqa heal --selector ... --html page.html   <span class="c"># self-heal a locator</span></pre>
+<span class="k">$</span> ai-review scan ./src --emit-tests generated_tests/
+<span class="k">$</span> ai-review gen-tests ./src        <span class="c"># just the tests</span>
+<span class="k">$</span> ai-review heal --selector ... --html page.html   <span class="c"># self-heal a locator</span></pre>
     <div style="margin-top:18px">
       <span class="tag">Python</span><span class="tag">Pydantic v2</span><span class="tag">Pytest</span>
       <span class="tag">Jinja2</span><span class="tag">OpenRouter</span><span class="tag">GitHub Actions</span>

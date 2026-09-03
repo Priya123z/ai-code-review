@@ -1,4 +1,4 @@
-name: aiqa scan
+name: ai-review scan
 
 # Demonstrates the live pipeline: on every push/PR the AI reviews the demo
 # module and uploads the HTML report as an artifact. On PRs it posts a summary
@@ -26,7 +26,7 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install aiqa
+      - name: Install
         run: pip install -e .
 
       - name: Check secret
@@ -44,10 +44,10 @@ jobs:
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
         run: |
-          aiqa scan examples/flask_shop --out report --project "flask_shop (CI demo)" \
+          ai-review scan examples/flask_shop --out report --project "flask_shop (CI demo)" \
             --emit-tests report/generated_tests
           {
-            echo "## 🤖 aiqa report"
+            echo "## AI code review"
             echo ""
             python - <<'PY'
           import json
@@ -66,7 +66,7 @@ jobs:
         if: steps.secret.outputs.present == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: aiqa-report
+          name: code-review-report
           path: report/
           retention-days: 14
 
@@ -81,7 +81,7 @@ jobs:
             const sev = {};
             for (const x of f) sev[x.severity] = (sev[x.severity]||0)+1;
             const line = Object.entries(sev).map(([k,v]) => `${k}: ${v}`).join(', ');
-            let body = `## 🤖 aiqa report\n\n**${f.length} findings** — ${line}\n\n`;
+            let body = `## AI code review\n\n**${f.length} findings** — ${line}\n\n`;
             for (const x of f.slice(0,10)) body += `- \`${x.severity}\` **${x.title}** — ${x.detail}\n`;
             body += `\n_Model: ${r.model}. Full HTML report in the run artifacts._`;
             await github.rest.issues.createComment({
