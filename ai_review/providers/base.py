@@ -20,6 +20,10 @@ class QuotaExhausted(LLMError):
 class BaseClient:
     name = "base"
     model = ""
+    # Which provider actually answered. Only the fallback chain has a choice to make;
+    # for a single client it is just itself. Declared here so callers can read it off
+    # any client without knowing which kind they hold.
+    served_by = None
 
     @property
     def configured(self) -> bool:

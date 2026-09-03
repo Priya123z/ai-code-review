@@ -18,3 +18,6 @@ htmlcov/
 # local scan output (the committed demo lives in sample-report/)
 /report/
 .DS_Store
+
+# local-only deep dive notes
+WALKTHROUGH.local.md
