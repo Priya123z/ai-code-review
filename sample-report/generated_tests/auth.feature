@@ -1,24 +1,18 @@
 Feature: auth.py — AI-suggested coverage
 
-  Scenario: Attempt SQL injection through username parameter
-    Given a test database with user 'testuser'
-    When login is called with username "testuser' OR '1'='1" and any password
-    Then the function should return None or raise an error, not return a valid token
+  Scenario: Login fails with SQL‑injection payload
+    Given a user "alice" with password "wonderland" exists in the database
+    When the login function is called with username "alice' OR '1'='1" and any password
+    Then the function returns None (authentication fails)
 
-  Scenario: Validate secure password handling
-    Given a user with a known password
-    When the password is stored and later verified
-    Then the plaintext password should not be stored in the database
-    And password verification should be constant-time
+  Scenario: Token does not expose secret key
+    Given a user "bob" with password "builder" exists
+    When login is called with correct credentials
+    Then the returned token does not contain the SECRET_KEY value
 
-  Scenario: Validate token generation security
-    Given multiple user logins
-    When tokens are generated for each user
-    Then tokens should be unique and unpredictable
-    And tokens should not contain predictable patterns
-
-  Scenario: Test session timeout functionality
-    Given a user logs in and receives a token
-    When the session expiration time passes
-    Then the token should no longer be valid
-    And current_user should return None
+  Scenario: Login succeeds with correct password and fails with wrong password when passwords are hashed
+    Given a user "carol" with password "s3cr3t" stored as a bcrypt hash in the database
+    When login is called with username "carol" and password "s3cr3t"
+    Then login returns a token
+    When login is called with username "carol" and password "wrong"
+    Then login returns None

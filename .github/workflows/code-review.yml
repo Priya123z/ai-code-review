@@ -2,7 +2,7 @@ name: ai-review scan
 
 # Demonstrates the live pipeline: on every push/PR the AI reviews the demo
 # module and uploads the HTML report as an artifact. On PRs it posts a summary
-# comment. Skips gracefully if the OPENROUTER_API_KEY secret is absent (forks).
+# comment. Skips gracefully when no provider secret is present, which is the case on forks.
 
 on:
   push:
@@ -31,17 +31,22 @@ jobs:
 
       - name: Check secret
         id: secret
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
         run: |
-          if [ -n "${{ secrets.OPENROUTER_API_KEY }}" ]; then
+          # Read through env rather than interpolating the secret into the test.
+          if [ -n "$GROQ_API_KEY" ] || [ -n "$OPENROUTER_API_KEY" ]; then
             echo "present=true" >> "$GITHUB_OUTPUT"
           else
             echo "present=false" >> "$GITHUB_OUTPUT"
-            echo "::warning::OPENROUTER_API_KEY not set — skipping live scan."
+            echo "::warning::no GROQ_API_KEY or OPENROUTER_API_KEY — skipping the live scan."
           fi
 
       - name: Run AI scan on demo module
         if: steps.secret.outputs.present == 'true'
         env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
         run: |
           ai-review scan examples/flask_shop --out report --project "flask_shop (CI demo)" \

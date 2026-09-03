@@ -27,6 +27,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Keep the landing page numbers honest
+        run: python3 site/sync_metrics.py sample-report/report.json site/index.html
+
       - name: Assemble public site
         run: |
           mkdir -p public/report

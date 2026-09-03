@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>aiqa report · flask_shop (demo API)</title>
+<title>Code review · flask_shop (demo API)</title>
 <style>
   :root{
     --bg:#f8f7ff; --panel:#ffffff; --panel2:#f3f1ff; --line:#e6e2f7;
@@ -66,13 +66,13 @@
     <div class="brand">
       <div class="logo">◆</div>
       <div>
-        <h1>AI QA Pipeline Report</h1>
-        <div class="sub">flask_shop (demo API) · commit <code>42588fd</code></div>
+        <h1>Code review report</h1>
+        <div class="sub">flask_shop (demo API) · commit <code>d3f2462</code></div>
       </div>
     </div>
     <div class="meta">
-      model <code>deepseek/deepseek-chat-v3.1</code><br/>
-      generated 2026-07-25 03:40:53 UTC
+      model <code>openai/gpt-oss-120b</code><br/>
+      generated 2026-09-03 12:16:14 UTC
     </div>
   </div>
 
@@ -84,17 +84,17 @@
   </div>
 
   <div class="cards">
-    <div class="card"><div class="n">863</div><div class="l">Risk score</div></div>
-    <div class="card"><div class="n">21</div><div class="l">Findings</div></div>
-    <div class="card"><div class="n">10</div><div class="l">Suggested tests</div></div>
+    <div class="card"><div class="n">483</div><div class="l">Risk score</div></div>
+    <div class="card"><div class="n">16</div><div class="l">Findings</div></div>
+    <div class="card"><div class="n">12</div><div class="l">Suggested tests</div></div>
     <div class="card"><div class="n">3</div><div class="l">Files reviewed</div></div>
   </div>
 
   <div class="bar">
-    <span style="flex:5;background:#ff4d6d"></span><span style="flex:7;background:#ff9f45"></span><span style="flex:8;background:#ffd166"></span><span style="flex:1;background:#8ac6ff"></span>
+    <span style="flex:1;background:#ff4d6d"></span><span style="flex:8;background:#ff9f45"></span><span style="flex:6;background:#ffd166"></span><span style="flex:1;background:#8ac6ff"></span>
   </div>
   <div class="legend">
-    <span><span class="dot" style="background:#ff4d6d"></span>critical · 5</span><span><span class="dot" style="background:#ff9f45"></span>high · 7</span><span><span class="dot" style="background:#ffd166"></span>medium · 8</span><span><span class="dot" style="background:#8ac6ff"></span>low · 1</span><span><span class="dot" style="background:#9aa4b2"></span>info · 0</span>
+    <span><span class="dot" style="background:#ff4d6d"></span>critical · 1</span><span><span class="dot" style="background:#ff9f45"></span>high · 8</span><span><span class="dot" style="background:#ffd166"></span>medium · 6</span><span><span class="dot" style="background:#8ac6ff"></span>low · 1</span><span><span class="dot" style="background:#9aa4b2"></span>info · 0</span>
   </div>
 
   <h2>Findings by file</h2>
@@ -102,7 +102,7 @@
   <div class="file">
     <div class="file-h">
       <span class="path">payments.py</span>
-      <span class="fsum">The payment module contains multiple critical reliability and security issues including financial calculation errors, exception handling problems, and missing validation checks.</span>
+      <span class="fsum">The module contains several reliability and security issues, notably missing validations, improper error handling, and lack of idempotency and authorization checks.</span>
     </div>
     
       
@@ -110,11 +110,22 @@
         <div class="finding-h">
           <span class="sev" style="background:#ff9f45">high</span>
           <span class="cat">reliability</span>
-          <span class="loc">line 7</span>
-          <div class="ftitle">Float-based monetary calculations cause rounding drift</div>
+          <span class="loc">line 4</span>
+          <div class="ftitle">Missing amount validation in charge()</div>
         </div>
-        <div class="detail">Using float for monetary calculations leads to rounding errors that accumulate across transactions, causing financial discrepancies over time</div>
-        <div class="rec"><b>Fix:</b> Use Decimal type for all monetary calculations to ensure precision</div>
+        <div class="detail">The function accepts zero or negative amounts, which can lead to unintended refunds or charges.</div>
+        <div class="rec"><b>Fix:</b> Validate that amount is a positive number before proceeding; raise a ValueError for invalid inputs.</div>
+      </div>
+      
+      <div class="finding">
+        <div class="finding-h">
+          <span class="sev" style="background:#ffd166">medium</span>
+          <span class="cat">maintainability</span>
+          <span class="loc">line 7</span>
+          <div class="ftitle">Floating‑point arithmetic for monetary values</div>
+        </div>
+        <div class="detail">Using float for money introduces rounding errors that accumulate across transactions.</div>
+        <div class="rec"><b>Fix:</b> Switch to Decimal for all monetary calculations and round only at the final step.</div>
       </div>
       
       <div class="finding">
@@ -122,54 +133,32 @@
           <span class="sev" style="background:#ff9f45">high</span>
           <span class="cat">reliability</span>
           <span class="loc">line 14</span>
-          <div class="ftitle">Bare except clause hides refund failures</div>
+          <div class="ftitle">Bare except clause in refund() masks failures</div>
         </div>
-        <div class="detail">Swallowing all exceptions in refund() makes it impossible to detect actual refund failures, potentially leaving customers charged when they should be refunded</div>
-        <div class="rec"><b>Fix:</b> Catch specific exceptions or re-raise with proper error handling; never use bare except</div>
+        <div class="detail">Catching all exceptions and always returning a success status hides real refund failures, misleading callers.</div>
+        <div class="rec"><b>Fix:</b> Catch specific exceptions, log the error, and propagate a failure response or re‑raise.</div>
       </div>
       
       <div class="finding">
         <div class="finding-h">
           <span class="sev" style="background:#ff9f45">high</span>
-          <span class="cat">security</span>
-          <span class="loc">line 19</span>
-          <div class="ftitle">Missing authorization check for cart ownership</div>
-        </div>
-        <div class="detail">process_order() doesn't verify that the user_token actually owns the cart being processed, allowing potential payment fraud</div>
-        <div class="rec"><b>Fix:</b> Add authorization check using current_user(token) to validate cart ownership before processing payment</div>
-      </div>
-      
-      <div class="finding">
-        <div class="finding-h">
-          <span class="sev" style="background:#ffd166">medium</span>
           <span class="cat">reliability</span>
           <span class="loc">line 18</span>
-          <div class="ftitle">No idempotency key for payment requests</div>
+          <div class="ftitle">Missing idempotency handling in process_order()</div>
         </div>
-        <div class="detail">Retried payment requests will charge customers multiple times due to missing idempotency mechanism</div>
-        <div class="rec"><b>Fix:</b> Add idempotency key generation and checking to prevent duplicate charges</div>
+        <div class="detail">Repeated calls (e.g., after a network retry) will charge the customer multiple times because no idempotency key is used.</div>
+        <div class="rec"><b>Fix:</b> Accept an idempotency_key parameter and pass it to the payment gateway; store and check prior charges.</div>
       </div>
       
       <div class="finding">
         <div class="finding-h">
           <span class="sev" style="background:#ffd166">medium</span>
-          <span class="cat">bug</span>
-          <span class="loc">line 6</span>
-          <div class="ftitle">No validation for negative or zero amounts</div>
+          <span class="cat">security</span>
+          <span class="loc">line 18</span>
+          <div class="ftitle">No authorization check for user_token in process_order()</div>
         </div>
-        <div class="detail">Negative amounts would effectively refund money instead of charging, and zero amounts process unnecessary transactions</div>
-        <div class="rec"><b>Fix:</b> Add validation to reject negative or zero amounts in charge() function</div>
-      </div>
-      
-      <div class="finding">
-        <div class="finding-h">
-          <span class="sev" style="background:#8ac6ff">low</span>
-          <span class="cat">maintainability</span>
-          <span class="loc">line 7</span>
-          <div class="ftitle">Hardcoded payment fee calculation</div>
-        </div>
-        <div class="detail">Payment processing fees are hardcoded, making it difficult to change fee structure or support different payment processors</div>
-        <div class="rec"><b>Fix:</b> Make fee calculation configurable through parameters or configuration</div>
+        <div class="detail">The function trusts the caller that the provided token owns the cart, allowing potential unauthorized purchases.</div>
+        <div class="rec"><b>Fix:</b> Validate the token against the cart owner (e.g., via auth.current_user) before charging.</div>
       </div>
       
     
@@ -179,43 +168,70 @@
       <h2 style="margin:0 0 12px">Suggested tests</h2>
       
       <div class="test">
-        <div class="tt">Test payment processing with decimal precision</div>
-        <div class="detail">Ensures monetary calculations don't suffer from floating-point rounding errors</div>
-        <pre>Scenario: Accurate payment calculation with decimal precision
-  Given a cart with items totaling $100.00
-  When the payment is processed with 2.9% + $0.30 fee
-  Then the total charged should be exactly $103.20
+        <div class="tt">Charge rejects zero or negative amounts</div>
+        <div class="detail">Ensures that invalid payment amounts are not processed, preventing refunds or accidental charges.</div>
+        <pre>Scenario: Reject invalid payment amounts
+  Given a payment gateway mock
+  And an amount of -10
+  When charge(gateway, -10) is called
+  Then a ValueError is raised
 </pre>
-        <pre>def test_payment_calculation_precision():
-    # Test with Decimal values
-    assert calculate_total(Decimal('100.00')) == Decimal('103.20')</pre>
+        <pre>def test_charge_invalid_amount():
+    with pytest.raises(ValueError):
+        charge(mock_gateway, -10)</pre>
       </div>
       
       <div class="test">
-        <div class="tt">Test refund failure handling</div>
-        <div class="detail">Ensures refund failures are properly communicated rather than silently ignored</div>
-        <pre>Scenario: Refund failure propagates error correctly
-  Given a payment gateway that throws an exception on refund
-  When a refund is attempted
-  Then the exception should be propagated to the caller
+        <div class="tt">Refund propagates gateway errors</div>
+        <div class="detail">Verifies that refund failures are not silently reported as success, improving reliability.</div>
+        <pre>Scenario: Refund failure is reported
+  Given a payment gateway mock that raises RuntimeError on refund
+  When refund(gateway, "ch_123", 50) is called
+  Then the function raises RuntimeError
 </pre>
-        <pre>def test_refund_failure_propagation():
-    with pytest.raises(PaymentGatewayError):
-        refund(failing_gateway, 'charge_id', 100.00)</pre>
+        <pre>def test_refund_propagates_error():
+    mock_gateway.refund.side_effect = RuntimeError("gateway down")
+    with pytest.raises(RuntimeError):
+        refund(mock_gateway, "ch_123", 50)</pre>
       </div>
       
       <div class="test">
-        <div class="tt">Test cart ownership validation</div>
-        <div class="detail">Prevents payment processing for carts not owned by the authenticated user</div>
-        <pre>Scenario: Payment rejected for unauthorized cart access
-  Given a cart owned by user A
-  When user B attempts to process payment for that cart
-  Then the payment should be rejected with authorization error
+        <div class="tt">Process order is idempotent</div>
+        <div class="detail">Ensures that retrying the same order does not double‑charge the customer.</div>
+        <pre>Scenario: Idempotent order processing
+  Given a payment gateway mock
+  And a cart with items
+  And a unique idempotency key
+  When process_order(gateway, cart, token, idempotency_key) is called twice
+  Then the gateway.capture method is called only once
 </pre>
-        <pre>def test_unauthorized_cart_payment_rejection():
-    # Mock current_user to return different user than cart owner
+        <pre>def test_process_order_idempotent(mocker):
+    gateway = mocker.Mock()
+    cart = {"items": [{"price": 10, "qty": 2}], "currency": "USD"}
+    token = "valid"
+    # first call
+    process_order(gateway, cart, token, idempotency_key="order-1")
+    # second call with same key
+    process_order(gateway, cart, token, idempotency_key="order-1")
+    assert gateway.capture.call_count == 1</pre>
+      </div>
+      
+      <div class="test">
+        <div class="tt">Process order rejects unauthorized user</div>
+        <div class="detail">Confirms that a user cannot charge a cart they do not own, preventing abuse.</div>
+        <pre>Scenario: Unauthorized cart access
+  Given a payment gateway mock
+  And a cart owned by user "alice"
+  And a token representing user "bob"
+  When process_order(gateway, cart, token) is called
+  Then an AuthorizationError (or similar) is raised
+</pre>
+        <pre>def test_process_order_unauthorized(mocker):
+    gateway = mocker.Mock()
+    cart = {"items": [], "owner": "alice"}
+    token = "bob_token"
     with pytest.raises(AuthorizationError):
-        process_order(gateway, other_users_cart, user_b_token)</pre>
+        process_order(gateway, cart, token)</pre>
       </div>
       
     </div>
@@ -225,74 +241,63 @@
   <div class="file">
     <div class="file-h">
       <span class="path">cart.py</span>
-      <span class="fsum">The file contains several critical bugs including mutable default arguments, race conditions, and unhandled edge cases that could lead to data corruption and runtime errors.</span>
+      <span class="fsum">The module contains several critical reliability and maintainability issues, notably a mutable default argument, missing input validation, division by zero risk, and a race condition in stock reservation.</span>
     </div>
     
       
       <div class="finding">
         <div class="finding-h">
-          <span class="sev" style="background:#ff4d6d">critical</span>
-          <span class="cat">bug</span>
+          <span class="sev" style="background:#ff9f45">high</span>
+          <span class="cat">maintainability</span>
           <span class="loc">line 5</span>
           <div class="ftitle">Mutable default argument in Cart.__init__</div>
         </div>
-        <div class="detail">Using a mutable default argument (items=[]) causes all Cart instances to share the same list if no items are provided, leading to cross-contamination of cart contents.</div>
-        <div class="rec"><b>Fix:</b> Change to `def __init__(self, items=None): self.items = items or []`</div>
+        <div class="detail">Using a list as a default value causes all Cart instances to share the same list, leading to unexpected cross‑instance state leakage.</div>
+        <div class="rec"><b>Fix:</b> Change the signature to def __init__(self, items=None): and inside set self.items = list(items) if items is not None else []</div>
       </div>
       
       <div class="finding">
         <div class="finding-h">
-          <span class="sev" style="background:#ff4d6d">critical</span>
+          <span class="sev" style="background:#ffd166">medium</span>
           <span class="cat">reliability</span>
-          <span class="loc">line 17</span>
-          <div class="ftitle">Race condition in reserve_stock function</div>
+          <span class="loc">line 9</span>
+          <div class="ftitle">No validation of quantity in Cart.add</div>
         </div>
-        <div class="detail">The check-then-act pattern without locking allows concurrent requests to oversell inventory when stock is low.</div>
-        <div class="rec"><b>Fix:</b> Use thread-safe operations (e.g., locks, atomic operations) or database-level constraints for inventory management.</div>
+        <div class="detail">Negative quantities are accepted, which can subtract from the total and produce nonsensical cart contents.</div>
+        <div class="rec"><b>Fix:</b> Validate that qty is a positive integer (e.g., if qty <= 0: raise ValueError) before appending to items.</div>
+      </div>
+      
+      <div class="finding">
+        <div class="finding-h">
+          <span class="sev" style="background:#ffd166">medium</span>
+          <span class="cat">reliability</span>
+          <span class="loc">line 13</span>
+          <div class="ftitle">ZeroDivisionError in Cart.average_price on empty cart</div>
+        </div>
+        <div class="detail">Calling average_price when the cart has no items triggers a division by zero exception.</div>
+        <div class="rec"><b>Fix:</b> Return 0 or raise a custom exception when len(self.items) == 0 before performing the division.</div>
       </div>
       
       <div class="finding">
         <div class="finding-h">
           <span class="sev" style="background:#ff9f45">high</span>
-          <span class="cat">bug</span>
-          <span class="loc">line 13</span>
-          <div class="ftitle">Potential ZeroDivisionError in average_price</div>
+          <span class="cat">reliability</span>
+          <span class="loc">line 18</span>
+          <div class="ftitle">Race condition in reserve_stock</div>
         </div>
-        <div class="detail">Calling average_price() on an empty cart will raise ZeroDivisionError.</div>
-        <div class="rec"><b>Fix:</b> Check if len(self.items) > 0 before division or return 0 for empty carts.</div>
+        <div class="detail">The check‑then‑act pattern (checking available stock then decrementing) is not atomic; concurrent calls can oversell inventory.</div>
+        <div class="rec"><b>Fix:</b> Guard the operation with a lock (e.g., threading.Lock) or use an atomic transaction provided by the storage layer.</div>
       </div>
       
       <div class="finding">
         <div class="finding-h">
           <span class="sev" style="background:#ffd166">medium</span>
           <span class="cat">bug</span>
-          <span class="loc">line 8</span>
-          <div class="ftitle">No validation for negative quantities in add method</div>
+          <span class="loc">line 27</span>
+          <div class="ftitle">apply_discount does not handle None coupon and unbounded percent</div>
         </div>
-        <div class="detail">Negative qty values can be added, which may lead to negative totals or inventory inconsistencies.</div>
-        <div class="rec"><b>Fix:</b> Add validation: `if qty <= 0: raise ValueError('Quantity must be positive')`</div>
-      </div>
-      
-      <div class="finding">
-        <div class="finding-h">
-          <span class="sev" style="background:#ffd166">medium</span>
-          <span class="cat">bug</span>
-          <span class="loc">line 25</span>
-          <div class="ftitle">Unbounded coupon percentage in apply_discount</div>
-        </div>
-        <div class="detail">Coupon percentage is not validated, allowing negative values or values >100 which could result in incorrect pricing (e.g., negative totals).</div>
-        <div class="rec"><b>Fix:</b> Validate coupon['percent'] is between 0 and 100 inclusive.</div>
-      </div>
-      
-      <div class="finding">
-        <div class="finding-h">
-          <span class="sev" style="background:#ffd166">medium</span>
-          <span class="cat">bug</span>
-          <span class="loc">line 25</span>
-          <div class="ftitle">Potential KeyError in apply_discount</div>
-        </div>
-        <div class="detail">If coupon is None or missing 'percent' key, the function will raise a KeyError or TypeError.</div>
-        <div class="rec"><b>Fix:</b> Add guard: `if not coupon or 'percent' not in coupon: return total`</div>
+        <div class="detail">If coupon is None, accessing coupon["percent"] raises TypeError. Additionally, a percent > 100 can produce a negative total, which is likely unintended.</div>
+        <div class="rec"><b>Fix:</b> Add a guard: if not coupon: return total. Validate that 0 <= coupon["percent"] <= 100 before applying the discount.</div>
       </div>
       
     
@@ -302,47 +307,88 @@
       <h2 style="margin:0 0 12px">Suggested tests</h2>
       
       <div class="test">
-        <div class="tt">Test cart isolation with default argument</div>
-        <div class="detail">Ensures Cart instances don't share items list when using default argument</div>
-        <pre>Scenario: Independent cart instances
-  Given two Cart instances created with default arguments
-  When I add an item to the first cart
-  Then the second cart should remain empty
+        <div class="tt">Cart instances should not share items list</div>
+        <div class="detail">Detects the mutable default argument bug where two carts unintentionally share state.</div>
+        <pre>Scenario: Separate carts maintain independent item lists
+  Given a new Cart instance cart_a
+  And a new Cart instance cart_b
+  When I add a product to cart_a
+  Then cart_b.items should be empty
 </pre>
-        <pre>def test_cart_instance_isolation():
-    cart1 = Cart()
-    cart2 = Cart()
-    cart1.add({'name': 'book', 'price': 10}, 1)
-    assert len(cart2.items) == 0</pre>
+        <pre>def test_carts_are_independent():
+    cart_a = Cart()
+    cart_b = Cart()
+    cart_a.add({"name": "Widget", "price": 10}, 1)
+    assert cart_b.items == []</pre>
       </div>
       
       <div class="test">
-        <div class="tt">Test concurrent inventory reservation</div>
-        <div class="detail">Verify race condition protection in inventory management</div>
-        <pre>Scenario: Concurrent inventory check
-  Given an inventory with 1 unit of a product
-  When two threads simultaneously reserve 1 unit each
-  Then only one reservation should succeed
+        <div class="tt">Cart.add should reject negative quantities</div>
+        <div class="detail">Ensures that invalid quantities cannot corrupt the cart total.</div>
+        <pre>Scenario: Adding a product with negative quantity raises error
+  Given a new Cart instance
+  When I attempt to add a product with qty -5
+  Then a ValueError should be raised
 </pre>
-        <pre>def test_concurrent_inventory_reservation():
-    import threading
-    inventory = {'product1': 1}
-    results = []
-    # Use threading to simulate concurrent access
-    # Verify only one reservation succeeds</pre>
-      </div>
-      
-      <div class="test">
-        <div class="tt">Test empty cart average price</div>
-        <div class="detail">Prevent ZeroDivisionError for empty carts</div>
-        <pre>Scenario: Empty cart average price
-  Given an empty cart
-  When I call average_price()
-  Then it should return 0 or handle gracefully without error
-</pre>
-        <pre>def test_empty_cart_average_price():
+        <pre>import pytest
+
+def test_add_negative_quantity_raises():
     cart = Cart()
-    assert cart.average_price() == 0  # or appropriate handling</pre>
+    with pytest.raises(ValueError):
+        cart.add({"name": "Gadget", "price": 20}, -5)</pre>
+      </div>
+      
+      <div class="test">
+        <div class="tt">average_price on empty cart should not raise</div>
+        <div class="detail">Verifies graceful handling of empty carts instead of a ZeroDivisionError.</div>
+        <pre>Scenario: Calling average_price on an empty cart returns 0
+  Given a new empty Cart instance
+  When I call average_price
+  Then the result should be 0
+</pre>
+        <pre>def test_average_price_empty_cart_returns_zero():
+    cart = Cart()
+    assert cart.average_price() == 0</pre>
+      </div>
+      
+      <div class="test">
+        <div class="tt">reserve_stock should be thread‑safe</div>
+        <div class="detail">Detects the race condition where concurrent reservations could oversell inventory.</div>
+        <pre>Scenario: Concurrent reservations do not oversell stock
+  Given an inventory with product_id 1 having quantity 1
+  When two threads simultaneously call reserve_stock for product_id 1 with qty 1
+  Then only one call should return True and the other False
+  And the final inventory quantity should be 0
+</pre>
+        <pre>import threading
+
+def test_reserve_stock_thread_safety():
+    inventory = {1: 1}
+    results = []
+    def worker():
+        results.append(reserve_stock(inventory, 1, 1))
+    t1 = threading.Thread(target=worker)
+    t2 = threading.Thread(target=worker)
+    t1.start(); t2.start(); t1.join(); t2.join()
+    assert results.count(True) == 1
+    assert results.count(False) == 1
+    assert inventory[1] == 0</pre>
+      </div>
+      
+      <div class="test">
+        <div class="tt">apply_discount handles None coupon and bounds percent</div>
+        <div class="detail">Ensures discount logic is robust against missing coupons and invalid percentages.</div>
+        <pre>Scenario: Discount with None coupon returns original total and percent >100 is capped
+  Given a total amount of 100
+  When I call apply_discount with coupon set to None
+  Then the result should be 100
+  When I call apply_discount with a coupon of percent 150
+  Then the result should be 0 (or raise a validation error depending on implementation)
+</pre>
+        <pre>def test_apply_discount_edge_cases():
+    assert apply_discount(100, None) == 100
+    # assuming implementation caps at 100%
+    assert apply_discount(100, {"percent": 150}) == 0</pre>
       </div>
       
     </div>
@@ -352,107 +398,74 @@
   <div class="file">
     <div class="file-h">
       <span class="path">auth.py</span>
-      <span class="fsum">The file contains multiple critical security vulnerabilities including SQL injection, hardcoded secrets, weak authentication mechanisms, and insecure session management.</span>
+      <span class="fsum">The file contains several critical security flaws (hard‑coded secret, SQL injection, plaintext password handling, predictable tokens) and some reliability concerns (unclosed DB connections, non‑thread‑safe session store).</span>
     </div>
     
+      
+      <div class="finding">
+        <div class="finding-h">
+          <span class="sev" style="background:#ff9f45">high</span>
+          <span class="cat">security</span>
+          <span class="loc">line 9</span>
+          <div class="ftitle">Hard‑coded secret key in source code</div>
+        </div>
+        <div class="detail">SECRET_KEY is defined in the module, exposing a live secret that can be extracted from source control or binaries.</div>
+        <div class="rec"><b>Fix:</b> Load the secret from a secure environment variable or secret manager at runtime and avoid committing it to the repository.</div>
+      </div>
       
       <div class="finding">
         <div class="finding-h">
           <span class="sev" style="background:#ff4d6d">critical</span>
           <span class="cat">security</span>
           <span class="loc">line 16</span>
-          <div class="ftitle">SQL Injection Vulnerability</div>
+          <div class="ftitle">SQL injection vulnerability in get_user</div>
         </div>
-        <div class="detail">The username parameter is directly interpolated into the SQL query string using string formatting, allowing attackers to inject malicious SQL code and potentially access or modify database contents.</div>
-        <div class="rec"><b>Fix:</b> Use parameterized queries: cur.execute('SELECT id, password FROM users WHERE username = ?', (username,))</div>
+        <div class="detail">The username is interpolated directly into the SQL statement, allowing an attacker to inject arbitrary SQL.</div>
+        <div class="rec"><b>Fix:</b> Use parameterised queries, e.g. cur.execute('SELECT id, password FROM users WHERE username = ?', (username,))</div>
       </div>
       
       <div class="finding">
         <div class="finding-h">
-          <span class="sev" style="background:#ff4d6d">critical</span>
-          <span class="cat">security</span>
-          <span class="loc">line 10</span>
-          <div class="ftitle">Hardcoded Secret Key in Source Code</div>
-        </div>
-        <div class="detail">The SECRET_KEY is hardcoded in the source file, making it visible in version control and accessible to anyone with code access. This violates secret management best practices.</div>
-        <div class="rec"><b>Fix:</b> Move the secret to environment variables or a secure secret management system: SECRET_KEY = os.environ.get('SECRET_KEY')</div>
-      </div>
-      
-      <div class="finding">
-        <div class="finding-h">
-          <span class="sev" style="background:#ff4d6d">critical</span>
+          <span class="sev" style="background:#ff9f45">high</span>
           <span class="cat">security</span>
           <span class="loc">line 24</span>
-          <div class="ftitle">Plaintext Password Storage and Comparison</div>
+          <div class="ftitle">Plaintext password comparison and storage</div>
         </div>
-        <div class="detail">Passwords are stored and compared in plaintext, and the comparison is not constant-time, making it vulnerable to timing attacks. If the database is compromised, all passwords are exposed.</div>
-        <div class="rec"><b>Fix:</b> Use a secure password hashing library like bcrypt or argon2: if bcrypt.checkpw(password.encode(), stored.encode()):</div>
+        <div class="detail">Passwords are compared as plain strings, implying they are stored in clear text and the comparison is not constant‑time, making brute‑force attacks easier.</div>
+        <div class="rec"><b>Fix:</b> Store passwords hashed with a strong algorithm (bcrypt, Argon2) and use a constant‑time comparison function for verification.</div>
       </div>
       
       <div class="finding">
         <div class="finding-h">
           <span class="sev" style="background:#ff9f45">high</span>
           <span class="cat">security</span>
-          <span class="loc">line 25</span>
-          <div class="ftitle">Predictable and Insecure Session Token Generation</div>
+          <span class="loc">line 26</span>
+          <div class="ftitle">Predictable authentication token and no expiry</div>
         </div>
-        <div class="detail">Session tokens are generated by concatenating user_id with a secret key, making them predictable and vulnerable to brute force attacks. The format 'user_id-SECRET_KEY' is easily guessable.</div>
-        <div class="rec"><b>Fix:</b> Use cryptographically secure random tokens: token = secrets.token_urlsafe(32)</div>
-      </div>
-      
-      <div class="finding">
-        <div class="finding-h">
-          <span class="sev" style="background:#ff9f45">high</span>
-          <span class="cat">security</span>
-          <span class="loc">line 32</span>
-          <div class="ftitle">No Session Expiration or Invalidation</div>
-        </div>
-        <div class="detail">Sessions never expire and there's no mechanism to invalidate them. Once issued, a token works forever, increasing the risk if tokens are compromised.</div>
-        <div class="rec"><b>Fix:</b> Add expiration timestamps to sessions and implement periodic cleanup of expired sessions.</div>
+        <div class="detail">Token is constructed as "user_id‑SECRET_KEY", which is deterministic and reveals the secret; there is also no expiration or signature verification.</div>
+        <div class="rec"><b>Fix:</b> Generate cryptographically random tokens (e.g., JWTs with signatures and expiry) and never embed the secret key in the token value.</div>
       </div>
       
       <div class="finding">
         <div class="finding-h">
           <span class="sev" style="background:#ffd166">medium</span>
           <span class="cat">reliability</span>
+          <span class="loc">line 13</span>
+          <div class="ftitle">Database connection not closed</div>
+        </div>
+        <div class="detail">sqlite3 connection is opened but never closed, leading to potential resource leaks under load.</div>
+        <div class="rec"><b>Fix:</b> Use a context manager (with sqlite3.connect(db_path) as conn:) or explicitly close the connection after use.</div>
+      </div>
+      
+      <div class="finding">
+        <div class="finding-h">
+          <span class="sev" style="background:#8ac6ff">low</span>
+          <span class="cat">maintainability</span>
           <span class="loc">line 11</span>
-          <div class="ftitle">Global In-Memory Session Storage</div>
+          <div class="ftitle">Global mutable session store is not thread‑safe</div>
         </div>
-        <div class="detail">SESSIONS is a global dictionary that stores all sessions in memory. This doesn't scale, is lost on server restart, and is not shared across multiple processes or servers.</div>
-        <div class="rec"><b>Fix:</b> Use a persistent session store like Redis or database-backed sessions with proper serialization.</div>
-      </div>
-      
-      <div class="finding">
-        <div class="finding-h">
-          <span class="sev" style="background:#ffd166">medium</span>
-          <span class="cat">reliability</span>
-          <span class="loc">line 14</span>
-          <div class="ftitle">Database Connection Not Properly Closed</div>
-        </div>
-        <div class="detail">The get_user function opens a database connection but never closes it, leading to potential resource leaks if called frequently.</div>
-        <div class="rec"><b>Fix:</b> Use context managers or ensure connections are closed: with sqlite3.connect(db_path) as conn:</div>
-      </div>
-      
-      <div class="finding">
-        <div class="finding-h">
-          <span class="sev" style="background:#ffd166">medium</span>
-          <span class="cat">security</span>
-          <span class="loc">line 20</span>
-          <div class="ftitle">Missing Input Validation and Sanitization</div>
-        </div>
-        <div class="detail">No validation of username and password inputs for length, format, or malicious content before processing.</div>
-        <div class="rec"><b>Fix:</b> Add input validation: validate username/password length, format, and sanitize inputs.</div>
-      </div>
-      
-      <div class="finding">
-        <div class="finding-h">
-          <span class="sev" style="background:#ff9f45">high</span>
-          <span class="cat">security</span>
-          <span class="loc">line 32</span>
-          <div class="ftitle">No Token Signature Verification</div>
-        </div>
-        <div class="detail">The current_user function doesn't verify that tokens are properly signed or formatted, relying only on dictionary lookup. This could allow forged tokens if an attacker guesses or obtains valid tokens.</div>
-        <div class="rec"><b>Fix:</b> Implement proper token validation with cryptographic signatures or use a established library like PyJWT.</div>
+        <div class="detail">SESSIONS is a plain dict accessed without synchronization, which can cause race conditions in multi‑threaded environments.</div>
+        <div class="rec"><b>Fix:</b> Replace with a thread‑safe store (e.g., collections.defaultdict with locks) or external session backend.</div>
       </div>
       
     
@@ -462,64 +475,58 @@
       <h2 style="margin:0 0 12px">Suggested tests</h2>
       
       <div class="test">
-        <div class="tt">SQL Injection Prevention Test</div>
-        <div class="detail">Ensure that user inputs are properly sanitized and SQL injection attacks are prevented.</div>
-        <pre>Scenario: Attempt SQL injection through username parameter
-  Given a test database with user 'testuser'
-  When login is called with username "testuser' OR '1'='1" and any password
-  Then the function should return None or raise an error, not return a valid token
+        <div class="tt">Prevent SQL injection in login</div>
+        <div class="detail">Ensures that malicious input cannot bypass authentication via crafted usernames.</div>
+        <pre>Scenario: Login fails with SQL‑injection payload
+  Given a user "alice" with password "wonderland" exists in the database
+  When the login function is called with username "alice' OR '1'='1" and any password
+  Then the function returns None (authentication fails)
 </pre>
-        <pre>def test_sql_injection_prevention():
-    # Setup test database
-    # Attempt injection
-    # Verify safe behavior
-    pass</pre>
+        <pre>def test_login_sql_injection_prevention(tmp_path):
+    db = tmp_path / 'test.db'
+    # setup DB with a user
+    conn = sqlite3.connect(db)
+    conn.execute('CREATE TABLE users (id INTEGER PRIMARY KEY, username TEXT, password TEXT)')
+    conn.execute('INSERT INTO users (username, password) VALUES (?, ?)', ('alice', 'wonderland'))
+    conn.commit()
+    conn.close()
+    token = login(str(db), "alice' OR '1'='1", 'any')
+    assert token is None
+</pre>
       </div>
       
       <div class="test">
-        <div class="tt">Password Hashing and Verification Test</div>
-        <div class="detail">Verify that passwords are properly hashed and compared securely.</div>
-        <pre>Scenario: Validate secure password handling
-  Given a user with a known password
-  When the password is stored and later verified
-  Then the plaintext password should not be stored in the database
-  And password verification should be constant-time
+        <div class="tt">Authentication token should be unpredictable and not contain secret</div>
+        <div class="detail">Detects deterministic token generation that leaks the secret key and can be guessed.</div>
+        <pre>Scenario: Token does not expose secret key
+  Given a user "bob" with password "builder" exists
+  When login is called with correct credentials
+  Then the returned token does not contain the SECRET_KEY value
 </pre>
-        <pre>def test_password_security():
-    # Test that passwords are hashed
-    # Test timing attack resistance
-    pass</pre>
+        <pre>def test_token_is_not_predictable(tmp_path):
+    db = tmp_path / 'test.db'
+    conn = sqlite3.connect(db)
+    conn.execute('CREATE TABLE users (id INTEGER PRIMARY KEY, username TEXT, password TEXT)')
+    conn.execute('INSERT INTO users (username, password) VALUES (?, ?)', ('bob', 'builder'))
+    conn.commit()
+    conn.close()
+    token = login(str(db), 'bob', 'builder')
+    assert token is not None
+    assert 'sk_live_' not in token  # SECRET_KEY should not appear in token
+</pre>
       </div>
       
       <div class="test">
-        <div class="tt">Session Token Security Test</div>
-        <div class="detail">Ensure session tokens are cryptographically secure and unpredictable.</div>
-        <pre>Scenario: Validate token generation security
-  Given multiple user logins
-  When tokens are generated for each user
-  Then tokens should be unique and unpredictable
-  And tokens should not contain predictable patterns
+        <div class="tt">Passwords must be stored hashed and verified securely</div>
+        <div class="detail">Ensures that password handling follows best‑practice security (hashing, constant‑time compare).</div>
+        <pre>Scenario: Login succeeds with correct password and fails with wrong password when passwords are hashed
+  Given a user "carol" with password "s3cr3t" stored as a bcrypt hash in the database
+  When login is called with username "carol" and password "s3cr3t"
+  Then login returns a token
+  When login is called with username "carol" and password "wrong"
+  Then login returns None
 </pre>
-        <pre>def test_token_security():
-    # Generate multiple tokens
-    # Check for uniqueness and randomness
-    pass</pre>
-      </div>
-      
-      <div class="test">
-        <div class="tt">Session Expiration Test</div>
-        <div class="detail">Verify that sessions expire properly and cannot be used indefinitely.</div>
-        <pre>Scenario: Test session timeout functionality
-  Given a user logs in and receives a token
-  When the session expiration time passes
-  Then the token should no longer be valid
-  And current_user should return None
-</pre>
-        <pre>def test_session_expiration():
-    # Create session with timestamp
-    # Simulate time passage
-    # Verify expiration
-    pass</pre>
+        
       </div>
       
     </div>
@@ -528,7 +535,7 @@
   
 
   <footer>
-    Generated by <a href="https://github.com/Priya123z/AI-pipeline-report">aiqa</a> — AI QA Copilot for CI/CD ·
+    Generated by <a href="https://github.com/Priya123z/ai-code-review">ai-code-review</a> ·
     built by <a href="https://priya123z.github.io">Priya Bhagoriya</a>
   </footer>
 </div>

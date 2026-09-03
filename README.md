@@ -1,163 +1,165 @@
-<div align="center">
+# ai-code-review
 
-# ◆ aiqa — AI QA Copilot for CI/CD
+Reads your changed files with an LLM and tells you what is likely to break, which
+tests are missing, and how to fix a Playwright locator that stopped matching.
 
-**Ship code. The AI reviews it.**
+Runs three ways: a CLI, a GitHub Action, and an HTTP API.
 
-An open-source pipeline that reviews every changed file with an LLM, surfaces real
-defects and reliability risks, generates the tests you're missing, and publishes a
-shareable HTML report — right inside GitHub Actions. Free to run.
+[**Try it in a browser**](https://priya123z.github.io/#demos) ·
+[Sample report](https://priya123z.github.io/ai-code-review/report/)
 
-[![tests](https://github.com/Priya123z/AI-pipeline-report/actions/workflows/tests.yml/badge.svg)](https://github.com/Priya123z/AI-pipeline-report/actions/workflows/tests.yml)
-[![ai-review scan](https://github.com/Priya123z/AI-pipeline-report/actions/workflows/aiqa-scan.yml/badge.svg)](https://github.com/Priya123z/AI-pipeline-report/actions/workflows/aiqa-scan.yml)
-[![pages](https://github.com/Priya123z/AI-pipeline-report/actions/workflows/pages.yml/badge.svg)](https://priya123z.github.io/AI-pipeline-report/)
-![python](https://img.shields.io/badge/python-3.9%2B-3776AB)
-![license](https://img.shields.io/badge/license-MIT-green)
+[![Tests](https://github.com/Priya123z/ai-code-review/actions/workflows/tests.yml/badge.svg)](https://github.com/Priya123z/ai-code-review/actions/workflows/tests.yml)
+[![Review](https://github.com/Priya123z/ai-code-review/actions/workflows/code-review.yml/badge.svg)](https://github.com/Priya123z/ai-code-review/actions/workflows/code-review.yml)
+![Python](https://img.shields.io/badge/python-3.9%2B-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
 
-### [🌐 Live landing page](https://priya123z.github.io/AI-pipeline-report/) &nbsp;·&nbsp; [📊 Live sample report](https://priya123z.github.io/AI-pipeline-report/report/)
+## Why
 
-</div>
+A linter tells you `total / len(items)` is valid Python. It cannot tell you that
+`items` is empty whenever a cart is new, that the test suite never covers that
+path, and that the fix belongs in `__init__` rather than at the call site. That
+gap between "syntactically fine" and "will page someone at 2am" is what this
+looks at.
 
----
-
-## The problem
-
-Code review catches what a reviewer has time to read. Static linters catch style, not
-*intent* — they don't know that `total / len(items)` crashes on an empty cart, or that a
-mutable default argument silently shares state across instances. And the tests that would
-have caught those bugs are exactly the ones nobody wrote.
-
-**aiqa** closes that gap. It puts a senior-QA-shaped LLM into your pipeline that reads the
-code the way a reviewer would, reports concrete defects with fixes, and hands you the
-tests to prevent regressions — as a report you can share with the whole team.
+It is not a replacement for review. It is a first pass that arrives before the
+human one, with the boring findings already written down.
 
 ## What it does
 
 | | |
 |---|---|
-| 🐞 **Defect detection (cross-file)** | Bugs, security holes, performance traps, reliability & maintainability risks — each with severity, line number, and a concrete fix. Each file is reviewed **with a map of its sibling modules**, so integration defects surface too (e.g. *"payments never verifies the token that auth issues"*). |
-| 🧪 **Test generation to real files** | Every gap becomes a Gherkin `.feature` **and** a runnable pytest skeleton — written to disk with `ai-review gen-tests` or `--emit-tests`, not just shown. |
-| 🔧 **Self-healing locators** | `ai-review heal` repairs a broken selector against the current DOM and returns a resilient, Playwright-ready locator (role / label / test-id first). |
-| 🚦 **Quality gate** | A single weighted **risk score** + a pass/fail gate. Block PRs on new criticals, or just report. |
-| 📊 **Shareable report** | Self-contained HTML + machine-readable JSON. Deploys to GitHub Pages for free. |
-| 🔌 **Three ways to run** | CLI, reusable GitHub Action, or import it as a Python library. |
-| 💸 **Zero-cost default** | Bring any [OpenRouter](https://openrouter.ai) model, including free ones. |
+| **Finds defects** | Severity, category, line, why it matters, and a suggested fix |
+| **Writes the missing tests** | Gherkin scenarios and pytest skeletons, emitted as real files |
+| **Repairs locators** | A selector that no longer matches plus the current markup, in, a working Playwright locator out |
+| **Gates the build** | Weighted risk score with configurable critical and high thresholds |
+| **Reads siblings** | Function and class signatures from neighbouring files, so cross-file mistakes are visible |
 
-> **A real run.** Scanning the bundled 3-file demo API ([`examples/flask_shop`](examples/flask_shop)) produced **21 findings (5 critical, 7 high)** across security, reliability and bug categories, **10 suggested tests**, and a failed quality gate — see the [live report](https://priya123z.github.io/AI-pipeline-report/report/). Nothing in it is hand-written.
-
-## Architecture
-
-```mermaid
-flowchart LR
-    A[Push / PR] --> B[collector<br/>changed files or full tree]
-    B --> C[analyzer<br/>versioned prompts]
-    C --> D[OpenRouter LLM]
-    D --> E[Pydantic validation<br/>Finding / SuggestedTest]
-    E --> F[Report model<br/>risk score + gate]
-    F --> G[Jinja2 renderer]
-    G --> H1[report.html]
-    G --> H2[report.json]
-    H1 --> I[GitHub Pages]
-    H2 --> J[PR comment / CI gate]
-```
-
-The design boundary that matters: **the LLM is isolated behind one client class, and its
-output is validated through Pydantic before it can reach a report.** Malformed or invented
-JSON fails at the boundary — a human never sees a fabricated finding. That same boundary
-is why the entire test suite runs green with **no API key**: tests inject a fake client and
-the pipeline can't tell the difference.
-
-```
-ai_review/
-├── cli.py                  # `ai-review scan | gen-tests | heal` entry point
-├── core/
-│   ├── config.py           # env-driven config (model, thresholds, filters)
-│   ├── collector.py        # full-tree or git-diff file collection
-│   └── pipeline.py         # orchestrator: collect → context → analyze → render
-├── providers/openrouter.py # the only code that touches HTTP (retries, JSON extraction)
-├── analyzers/
-│   ├── context.py          # RAG-lite: sibling-module signatures → cross-file awareness
-│   ├── defects.py          # versioned prompts + LLM output → Pydantic
-│   └── selfheal.py         # broken selector + DOM → resilient Playwright locator
-├── report/
-│   ├── schema.py           # Finding, SuggestedTest, Report (risk score + gate)
-│   ├── render.py           # Report → HTML + JSON
-│   └── emit.py             # suggested tests → real .feature + pytest files
-└── templates/report.html.j2
-```
-
-## Quick start (CLI)
+## Quick start
 
 ```bash
-git clone https://github.com/Priya123z/AI-pipeline-report.git
-cd AI-pipeline-report
-python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
-pip install -e ".[dev]"
+pip install -e .
 
-cp .env.example .env        # then paste your OpenRouter key into .env
-export OPENROUTER_API_KEY=sk-or-...
-
-# scan the bundled demo API, and also write the generated tests to disk
-ai-review scan examples/flask_shop --out report/ --emit-tests generated_tests/
-open report/report.html     # a real report — see /sample-report for a committed copy
-
-# generate ONLY the tests
-ai-review gen-tests examples/flask_shop --out generated_tests/
-
-# self-heal a broken UI selector against the current DOM
-ai-review heal --selector "#pay-now-btn" --html examples/selfheal_demo/checkout.html \
-          --desc "the button that submits the payment"
+export GROQ_API_KEY=gsk_...            # free key: console.groq.com/keys
+ai-review scan ./src --out report/
+open report/index.html
 ```
 
-Run the tests (no key needed — the LLM is fully mocked):
+Other commands:
 
 ```bash
-pytest -q
+ai-review scan . --diff --fail-on-gate         # only what changed, fail the build
+ai-review scan ./src --emit-tests tests/gen/   # write the suggested tests out
+ai-review gen-tests ./src --out tests/gen/
+ai-review heal --selector "#pay-now" --html page.html
 ```
 
-## Use it as a GitHub Action
-
-1. Add your key as a repo secret named `OPENROUTER_API_KEY`
-   (`Settings → Secrets and variables → Actions`).
-2. Add a step to any workflow:
+## As a GitHub Action
 
 ```yaml
-- uses: Priya123z/AI-pipeline-report@v1
+- uses: Priya123z/ai-code-review@main
   with:
-    target: ./src
-    diff: "true"            # only review files changed in the PR
-    fail-on-gate: "true"    # fail the build on new critical findings
+    target: .
+    diff: "true"
+    fail-on-gate: "false"
   env:
-    OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+    GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
 ```
 
-On pull requests it posts a findings summary as a comment; on every run it uploads the full
-HTML report as an artifact. See [`.github/workflows/aiqa-scan.yml`](.github/workflows/aiqa-scan.yml).
+## As an API
 
-## Use it as a Python library
+`server/` is a FastAPI app that backs the demos on the portfolio. It runs on a
+free Hugging Face Space.
 
-```python
-from ai_review.core.config import Config
-from ai_review.core.pipeline import run_and_write
-
-report, paths = run_and_write(Config(target="src", out_dir="report"))
-print(report.risk_score, report.severity_breakdown)
-if report.gate_fails(max_critical=0, max_high=3):
-    raise SystemExit("quality gate failed")
+```bash
+pip install -r server/requirements.txt
+uvicorn server.app:app --port 8000
 ```
+
+```
+POST /api/review   { code, filename }        → defects + suggested tests
+POST /api/specs    { story }                 → Gherkin + pytest
+POST /api/heal     { selector, html }        → a locator that works
+GET  /api/health                             → configured providers
+GET  /api/quota                              → what is left of today's budget
+```
+
+Deploy it with `./server/deploy-space.sh <hf-username>`, then set `GROQ_API_KEY`
+in the Space settings.
+
+## Running on a free tier
+
+This is most of the engineering, so it is worth being explicit.
+
+Groq's free tier allows 30 requests a minute, 1000 a day, 8000 tokens a minute
+and 200k a day. **Tokens per minute is what binds** — a couple of 2000-token
+reviews exhaust the minute long before they get near 30 requests. So the budget
+is counted in tokens, and a request is refused before it is sent rather than
+after a 429 comes back.
+
+Providers are tried in order: Groq, then OpenRouter, then a saved response. Two
+OpenRouter free models returned 429 on the very first call while this was being
+written, which is why there is a chain at all rather than one provider and hope.
+
+When the budget is spent the API answers `200` with a pre-generated example
+labelled `"source": "cached"`. It does not pretend to be live, and it does not
+return a 500 — a dead demo teaches a visitor nothing. Anyone who wants unlimited
+runs sends their own key in `X-API-Key` and skips the budget entirely.
+
+**It will not tell you your code is fine when it could not read it.** A provider
+outage used to produce zero findings and a passing gate, which is
+indistinguishable from clean code. Files that fail now carry an error, the gate
+fails if nothing was reviewed, and the CLI exits `2`.
 
 ## Configuration
 
-Everything is env-overridable so CI stays declarative:
-
-| Variable | Default | Purpose |
+| Variable | Default | |
 |---|---|---|
-| `OPENROUTER_API_KEY` | — | Your OpenRouter key (secret; never commit it). |
-| `AI_REVIEW_MODEL` | `deepseek/deepseek-chat-v3.1` | Any OpenRouter slug. Free options: `openai/gpt-oss-20b:free`, `google/gemma-4-31b-it:free`. |
-| `AI_REVIEW_MAX_FILES` | `12` | Cap files per run (cost control). |
-| `AI_REVIEW_MAX_CRITICAL` | `0` | Criticals the gate tolerates. |
-| `AI_REVIEW_MAX_HIGH` | `3` | Highs the gate tolerates. |
+| `GROQ_API_KEY` | — | Primary provider |
+| `OPENROUTER_API_KEY` | — | Fallback |
+| `AI_REVIEW_MODEL` | provider default | Overridden by `--model` |
+| `AI_REVIEW_MAX_FILES` | `12` | Cap per run |
+| `AI_REVIEW_MAX_CRITICAL` | `0` | Gate threshold |
+| `AI_REVIEW_MAX_HIGH` | `3` | Gate threshold |
+| `ALLOWED_ORIGINS` | the portfolio origin | CORS, server only |
 
-## License
+## Layout
 
-[MIT](LICENSE) © 2026 Priya Bhagoriya
+```
+ai_review/
+  cli.py                  argparse entry point
+  core/       config, collector, pipeline
+  providers/  base, groq, openrouter, chain      the only code that does HTTP
+  analyzers/  defects, specs, selfheal, context  prompts live here
+  report/     schema, render, emit               Pydantic contracts
+  templates/  report.html.j2
+server/       app, quota, cache, samples, Dockerfile
+tests/        45 tests, no API key needed
+```
+
+The LLM is reachable only through one `chat(system, user, as_json)` method. That
+is what lets the whole suite run offline: tests substitute that one method and
+nothing above it knows the difference. There is a test asserting `chat_json`
+still routes through it, because breaking that silently bypassed every fake in
+the suite once already.
+
+## Tests
+
+```bash
+pip install -e ".[dev]"
+pytest -q          # 45 passed, no API key required
+```
+
+Covers the provider chain falling through and exhausting, quota refusal and
+per-visitor limits, the cached fallback, own-key bypass, input truncation, and
+malformed model output being dropped without sinking the rest of the file.
+
+## Honest limitations
+
+- Findings are suggestions. Some are wrong, and confidence is not calibrated.
+- Python only for now; the collector filters on `.py`.
+- Sibling context is regex-extracted signatures, not a real index. It catches
+  obvious mismatches, not deep call-graph problems.
+- Two runs on the same file can differ. That is the nature of it, which is why
+  the tests assert on properties rather than on exact output.
+
+MIT.

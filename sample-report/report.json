@@ -1,119 +1,129 @@
 {
   "project": "flask_shop (demo API)",
-  "model": "deepseek/deepseek-chat-v3.1",
-  "generated_at": "2026-07-25T03:40:53.838501+00:00",
-  "commit": "42588fd",
+  "model": "openai/gpt-oss-120b",
+  "generated_at": "2026-09-03T12:16:14.292601+00:00",
+  "commit": "d3f2462",
   "files": [
     {
       "path": "payments.py",
       "language": "python",
       "findings": [
         {
-          "title": "Float-based monetary calculations cause rounding drift",
+          "title": "Missing amount validation in charge()",
           "severity": "high",
           "category": "reliability",
           "file": "payments.py",
-          "line": 7,
-          "detail": "Using float for monetary calculations leads to rounding errors that accumulate across transactions, causing financial discrepancies over time",
-          "recommendation": "Use Decimal type for all monetary calculations to ensure precision",
+          "line": 4,
+          "detail": "The function accepts zero or negative amounts, which can lead to unintended refunds or charges.",
+          "recommendation": "Validate that amount is a positive number before proceeding; raise a ValueError for invalid inputs.",
           "confidence": 0.95
         },
         {
-          "title": "Bare except clause hides refund failures",
+          "title": "Floating‑point arithmetic for monetary values",
+          "severity": "medium",
+          "category": "maintainability",
+          "file": "payments.py",
+          "line": 7,
+          "detail": "Using float for money introduces rounding errors that accumulate across transactions.",
+          "recommendation": "Switch to Decimal for all monetary calculations and round only at the final step.",
+          "confidence": 0.9
+        },
+        {
+          "title": "Bare except clause in refund() masks failures",
           "severity": "high",
           "category": "reliability",
           "file": "payments.py",
           "line": 14,
-          "detail": "Swallowing all exceptions in refund() makes it impossible to detect actual refund failures, potentially leaving customers charged when they should be refunded",
-          "recommendation": "Catch specific exceptions or re-raise with proper error handling; never use bare except",
-          "confidence": 0.9
+          "detail": "Catching all exceptions and always returning a success status hides real refund failures, misleading callers.",
+          "recommendation": "Catch specific exceptions, log the error, and propagate a failure response or re‑raise.",
+          "confidence": 0.96
         },
         {
-          "title": "Missing authorization check for cart ownership",
+          "title": "Missing idempotency handling in process_order()",
           "severity": "high",
-          "category": "security",
-          "file": "payments.py",
-          "line": 19,
-          "detail": "process_order() doesn't verify that the user_token actually owns the cart being processed, allowing potential payment fraud",
-          "recommendation": "Add authorization check using current_user(token) to validate cart ownership before processing payment",
-          "confidence": 0.85
-        },
-        {
-          "title": "No idempotency key for payment requests",
-          "severity": "medium",
           "category": "reliability",
           "file": "payments.py",
           "line": 18,
-          "detail": "Retried payment requests will charge customers multiple times due to missing idempotency mechanism",
-          "recommendation": "Add idempotency key generation and checking to prevent duplicate charges",
-          "confidence": 0.8
+          "detail": "Repeated calls (e.g., after a network retry) will charge the customer multiple times because no idempotency key is used.",
+          "recommendation": "Accept an idempotency_key parameter and pass it to the payment gateway; store and check prior charges.",
+          "confidence": 0.94
         },
         {
-          "title": "No validation for negative or zero amounts",
+          "title": "No authorization check for user_token in process_order()",
           "severity": "medium",
-          "category": "bug",
+          "category": "security",
           "file": "payments.py",
-          "line": 6,
-          "detail": "Negative amounts would effectively refund money instead of charging, and zero amounts process unnecessary transactions",
-          "recommendation": "Add validation to reject negative or zero amounts in charge() function",
-          "confidence": 0.8
-        },
-        {
-          "title": "Hardcoded payment fee calculation",
-          "severity": "low",
-          "category": "maintainability",
-          "file": "payments.py",
-          "line": 7,
-          "detail": "Payment processing fees are hardcoded, making it difficult to change fee structure or support different payment processors",
-          "recommendation": "Make fee calculation configurable through parameters or configuration",
-          "confidence": 0.7
+          "line": 18,
+          "detail": "The function trusts the caller that the provided token owns the cart, allowing potential unauthorized purchases.",
+          "recommendation": "Validate the token against the cart owner (e.g., via auth.current_user) before charging.",
+          "confidence": 0.92
         }
       ],
       "suggested_tests": [
         {
-          "title": "Test payment processing with decimal precision",
-          "rationale": "Ensures monetary calculations don't suffer from floating-point rounding errors",
+          "title": "Charge rejects zero or negative amounts",
+          "rationale": "Ensures that invalid payment amounts are not processed, preventing refunds or accidental charges.",
           "target_file": "payments.py",
           "scenario": {
-            "name": "Accurate payment calculation with decimal precision",
+            "name": "Reject invalid payment amounts",
             "steps": [
-              "Given a cart with items totaling $100.00",
-              "When the payment is processed with 2.9% + $0.30 fee",
-              "Then the total charged should be exactly $103.20"
+              "Given a payment gateway mock",
+              "And an amount of -10",
+              "When charge(gateway, -10) is called",
+              "Then a ValueError is raised"
             ]
           },
-          "pytest_skeleton": "def test_payment_calculation_precision():\n    # Test with Decimal values\n    assert calculate_total(Decimal('100.00')) == Decimal('103.20')"
+          "pytest_skeleton": "def test_charge_invalid_amount():\n    with pytest.raises(ValueError):\n        charge(mock_gateway, -10)"
         },
         {
-          "title": "Test refund failure handling",
-          "rationale": "Ensures refund failures are properly communicated rather than silently ignored",
+          "title": "Refund propagates gateway errors",
+          "rationale": "Verifies that refund failures are not silently reported as success, improving reliability.",
           "target_file": "payments.py",
           "scenario": {
-            "name": "Refund failure propagates error correctly",
+            "name": "Refund failure is reported",
             "steps": [
-              "Given a payment gateway that throws an exception on refund",
-              "When a refund is attempted",
-              "Then the exception should be propagated to the caller"
+              "Given a payment gateway mock that raises RuntimeError on refund",
+              "When refund(gateway, \"ch_123\", 50) is called",
+              "Then the function raises RuntimeError"
             ]
           },
-          "pytest_skeleton": "def test_refund_failure_propagation():\n    with pytest.raises(PaymentGatewayError):\n        refund(failing_gateway, 'charge_id', 100.00)"
+          "pytest_skeleton": "def test_refund_propagates_error():\n    mock_gateway.refund.side_effect = RuntimeError(\"gateway down\")\n    with pytest.raises(RuntimeError):\n        refund(mock_gateway, \"ch_123\", 50)"
         },
         {
-          "title": "Test cart ownership validation",
-          "rationale": "Prevents payment processing for carts not owned by the authenticated user",
+          "title": "Process order is idempotent",
+          "rationale": "Ensures that retrying the same order does not double‑charge the customer.",
           "target_file": "payments.py",
           "scenario": {
-            "name": "Payment rejected for unauthorized cart access",
+            "name": "Idempotent order processing",
             "steps": [
-              "Given a cart owned by user A",
-              "When user B attempts to process payment for that cart",
-              "Then the payment should be rejected with authorization error"
+              "Given a payment gateway mock",
+              "And a cart with items",
+              "And a unique idempotency key",
+              "When process_order(gateway, cart, token, idempotency_key) is called twice",
+              "Then the gateway.capture method is called only once"
             ]
           },
-          "pytest_skeleton": "def test_unauthorized_cart_payment_rejection():\n    # Mock current_user to return different user than cart owner\n    with pytest.raises(AuthorizationError):\n        process_order(gateway, other_users_cart, user_b_token)"
+          "pytest_skeleton": "def test_process_order_idempotent(mocker):\n    gateway = mocker.Mock()\n    cart = {\"items\": [{\"price\": 10, \"qty\": 2}], \"currency\": \"USD\"}\n    token = \"valid\"\n    # first call\n    process_order(gateway, cart, token, idempotency_key=\"order-1\")\n    # second call with same key\n    process_order(gateway, cart, token, idempotency_key=\"order-1\")\n    assert gateway.capture.call_count == 1"
+        },
+        {
+          "title": "Process order rejects unauthorized user",
+          "rationale": "Confirms that a user cannot charge a cart they do not own, preventing abuse.",
+          "target_file": "payments.py",
+          "scenario": {
+            "name": "Unauthorized cart access",
+            "steps": [
+              "Given a payment gateway mock",
+              "And a cart owned by user \"alice\"",
+              "And a token representing user \"bob\"",
+              "When process_order(gateway, cart, token) is called",
+              "Then an AuthorizationError (or similar) is raised"
+            ]
+          },
+          "pytest_skeleton": "def test_process_order_unauthorized(mocker):\n    gateway = mocker.Mock()\n    cart = {\"items\": [], \"owner\": \"alice\"}\n    token = \"bob_token\"\n    with pytest.raises(AuthorizationError):\n        process_order(gateway, cart, token)"
         }
       ],
-      "summary": "The payment module contains multiple critical reliability and security issues including financial calculation errors, exception handling problems, and missing validation checks."
+      "summary": "The module contains several reliability and security issues, notably missing validations, improper error handling, and lack of idempotency and authorization checks.",
+      "error": ""
     },
     {
       "path": "cart.py",
@@ -121,268 +131,247 @@
       "findings": [
         {
           "title": "Mutable default argument in Cart.__init__",
-          "severity": "critical",
-          "category": "bug",
+          "severity": "high",
+          "category": "maintainability",
           "file": "cart.py",
           "line": 5,
-          "detail": "Using a mutable default argument (items=[]) causes all Cart instances to share the same list if no items are provided, leading to cross-contamination of cart contents.",
-          "recommendation": "Change to `def __init__(self, items=None): self.items = items or []`",
-          "confidence": 1.0
+          "detail": "Using a list as a default value causes all Cart instances to share the same list, leading to unexpected cross‑instance state leakage.",
+          "recommendation": "Change the signature to def __init__(self, items=None): and inside set self.items = list(items) if items is not None else []",
+          "confidence": 0.99
         },
         {
-          "title": "Race condition in reserve_stock function",
-          "severity": "critical",
+          "title": "No validation of quantity in Cart.add",
+          "severity": "medium",
           "category": "reliability",
           "file": "cart.py",
-          "line": 17,
-          "detail": "The check-then-act pattern without locking allows concurrent requests to oversell inventory when stock is low.",
-          "recommendation": "Use thread-safe operations (e.g., locks, atomic operations) or database-level constraints for inventory management.",
-          "confidence": 0.9
+          "line": 9,
+          "detail": "Negative quantities are accepted, which can subtract from the total and produce nonsensical cart contents.",
+          "recommendation": "Validate that qty is a positive integer (e.g., if qty <= 0: raise ValueError) before appending to items.",
+          "confidence": 0.95
         },
         {
-          "title": "Potential ZeroDivisionError in average_price",
-          "severity": "high",
-          "category": "bug",
+          "title": "ZeroDivisionError in Cart.average_price on empty cart",
+          "severity": "medium",
+          "category": "reliability",
           "file": "cart.py",
           "line": 13,
-          "detail": "Calling average_price() on an empty cart will raise ZeroDivisionError.",
-          "recommendation": "Check if len(self.items) > 0 before division or return 0 for empty carts.",
-          "confidence": 1.0
+          "detail": "Calling average_price when the cart has no items triggers a division by zero exception.",
+          "recommendation": "Return 0 or raise a custom exception when len(self.items) == 0 before performing the division.",
+          "confidence": 0.97
         },
         {
-          "title": "No validation for negative quantities in add method",
+          "title": "Race condition in reserve_stock",
+          "severity": "high",
+          "category": "reliability",
+          "file": "cart.py",
+          "line": 18,
+          "detail": "The check‑then‑act pattern (checking available stock then decrementing) is not atomic; concurrent calls can oversell inventory.",
+          "recommendation": "Guard the operation with a lock (e.g., threading.Lock) or use an atomic transaction provided by the storage layer.",
+          "confidence": 0.94
+        },
+        {
+          "title": "apply_discount does not handle None coupon and unbounded percent",
           "severity": "medium",
           "category": "bug",
           "file": "cart.py",
-          "line": 8,
-          "detail": "Negative qty values can be added, which may lead to negative totals or inventory inconsistencies.",
-          "recommendation": "Add validation: `if qty <= 0: raise ValueError('Quantity must be positive')`",
-          "confidence": 0.9
-        },
-        {
-          "title": "Unbounded coupon percentage in apply_discount",
-          "severity": "medium",
-          "category": "bug",
-          "file": "cart.py",
-          "line": 25,
-          "detail": "Coupon percentage is not validated, allowing negative values or values >100 which could result in incorrect pricing (e.g., negative totals).",
-          "recommendation": "Validate coupon['percent'] is between 0 and 100 inclusive.",
-          "confidence": 0.8
-        },
-        {
-          "title": "Potential KeyError in apply_discount",
-          "severity": "medium",
-          "category": "bug",
-          "file": "cart.py",
-          "line": 25,
-          "detail": "If coupon is None or missing 'percent' key, the function will raise a KeyError or TypeError.",
-          "recommendation": "Add guard: `if not coupon or 'percent' not in coupon: return total`",
-          "confidence": 0.8
+          "line": 27,
+          "detail": "If coupon is None, accessing coupon[\"percent\"] raises TypeError. Additionally, a percent > 100 can produce a negative total, which is likely unintended.",
+          "recommendation": "Add a guard: if not coupon: return total. Validate that 0 <= coupon[\"percent\"] <= 100 before applying the discount.",
+          "confidence": 0.93
         }
       ],
       "suggested_tests": [
         {
-          "title": "Test cart isolation with default argument",
-          "rationale": "Ensures Cart instances don't share items list when using default argument",
+          "title": "Cart instances should not share items list",
+          "rationale": "Detects the mutable default argument bug where two carts unintentionally share state.",
           "target_file": "cart.py",
           "scenario": {
-            "name": "Independent cart instances",
+            "name": "Separate carts maintain independent item lists",
             "steps": [
-              "Given two Cart instances created with default arguments",
-              "When I add an item to the first cart",
-              "Then the second cart should remain empty"
+              "Given a new Cart instance cart_a",
+              "And a new Cart instance cart_b",
+              "When I add a product to cart_a",
+              "Then cart_b.items should be empty"
             ]
           },
-          "pytest_skeleton": "def test_cart_instance_isolation():\n    cart1 = Cart()\n    cart2 = Cart()\n    cart1.add({'name': 'book', 'price': 10}, 1)\n    assert len(cart2.items) == 0"
+          "pytest_skeleton": "def test_carts_are_independent():\n    cart_a = Cart()\n    cart_b = Cart()\n    cart_a.add({\"name\": \"Widget\", \"price\": 10}, 1)\n    assert cart_b.items == []"
         },
         {
-          "title": "Test concurrent inventory reservation",
-          "rationale": "Verify race condition protection in inventory management",
+          "title": "Cart.add should reject negative quantities",
+          "rationale": "Ensures that invalid quantities cannot corrupt the cart total.",
           "target_file": "cart.py",
           "scenario": {
-            "name": "Concurrent inventory check",
+            "name": "Adding a product with negative quantity raises error",
             "steps": [
-              "Given an inventory with 1 unit of a product",
-              "When two threads simultaneously reserve 1 unit each",
-              "Then only one reservation should succeed"
+              "Given a new Cart instance",
+              "When I attempt to add a product with qty -5",
+              "Then a ValueError should be raised"
             ]
           },
-          "pytest_skeleton": "def test_concurrent_inventory_reservation():\n    import threading\n    inventory = {'product1': 1}\n    results = []\n    # Use threading to simulate concurrent access\n    # Verify only one reservation succeeds"
+          "pytest_skeleton": "import pytest\n\ndef test_add_negative_quantity_raises():\n    cart = Cart()\n    with pytest.raises(ValueError):\n        cart.add({\"name\": \"Gadget\", \"price\": 20}, -5)"
         },
         {
-          "title": "Test empty cart average price",
-          "rationale": "Prevent ZeroDivisionError for empty carts",
+          "title": "average_price on empty cart should not raise",
+          "rationale": "Verifies graceful handling of empty carts instead of a ZeroDivisionError.",
           "target_file": "cart.py",
           "scenario": {
-            "name": "Empty cart average price",
+            "name": "Calling average_price on an empty cart returns 0",
             "steps": [
-              "Given an empty cart",
-              "When I call average_price()",
-              "Then it should return 0 or handle gracefully without error"
+              "Given a new empty Cart instance",
+              "When I call average_price",
+              "Then the result should be 0"
             ]
           },
-          "pytest_skeleton": "def test_empty_cart_average_price():\n    cart = Cart()\n    assert cart.average_price() == 0  # or appropriate handling"
+          "pytest_skeleton": "def test_average_price_empty_cart_returns_zero():\n    cart = Cart()\n    assert cart.average_price() == 0"
+        },
+        {
+          "title": "reserve_stock should be thread‑safe",
+          "rationale": "Detects the race condition where concurrent reservations could oversell inventory.",
+          "target_file": "cart.py",
+          "scenario": {
+            "name": "Concurrent reservations do not oversell stock",
+            "steps": [
+              "Given an inventory with product_id 1 having quantity 1",
+              "When two threads simultaneously call reserve_stock for product_id 1 with qty 1",
+              "Then only one call should return True and the other False",
+              "And the final inventory quantity should be 0"
+            ]
+          },
+          "pytest_skeleton": "import threading\n\ndef test_reserve_stock_thread_safety():\n    inventory = {1: 1}\n    results = []\n    def worker():\n        results.append(reserve_stock(inventory, 1, 1))\n    t1 = threading.Thread(target=worker)\n    t2 = threading.Thread(target=worker)\n    t1.start(); t2.start(); t1.join(); t2.join()\n    assert results.count(True) == 1\n    assert results.count(False) == 1\n    assert inventory[1] == 0"
+        },
+        {
+          "title": "apply_discount handles None coupon and bounds percent",
+          "rationale": "Ensures discount logic is robust against missing coupons and invalid percentages.",
+          "target_file": "cart.py",
+          "scenario": {
+            "name": "Discount with None coupon returns original total and percent >100 is capped",
+            "steps": [
+              "Given a total amount of 100",
+              "When I call apply_discount with coupon set to None",
+              "Then the result should be 100",
+              "When I call apply_discount with a coupon of percent 150",
+              "Then the result should be 0 (or raise a validation error depending on implementation)"
+            ]
+          },
+          "pytest_skeleton": "def test_apply_discount_edge_cases():\n    assert apply_discount(100, None) == 100\n    # assuming implementation caps at 100%\n    assert apply_discount(100, {\"percent\": 150}) == 0"
         }
       ],
-      "summary": "The file contains several critical bugs including mutable default arguments, race conditions, and unhandled edge cases that could lead to data corruption and runtime errors."
+      "summary": "The module contains several critical reliability and maintainability issues, notably a mutable default argument, missing input validation, division by zero risk, and a race condition in stock reservation.",
+      "error": ""
     },
     {
       "path": "auth.py",
       "language": "python",
       "findings": [
         {
-          "title": "SQL Injection Vulnerability",
+          "title": "Hard‑coded secret key in source code",
+          "severity": "high",
+          "category": "security",
+          "file": "auth.py",
+          "line": 9,
+          "detail": "SECRET_KEY is defined in the module, exposing a live secret that can be extracted from source control or binaries.",
+          "recommendation": "Load the secret from a secure environment variable or secret manager at runtime and avoid committing it to the repository.",
+          "confidence": 1.0
+        },
+        {
+          "title": "SQL injection vulnerability in get_user",
           "severity": "critical",
           "category": "security",
           "file": "auth.py",
           "line": 16,
-          "detail": "The username parameter is directly interpolated into the SQL query string using string formatting, allowing attackers to inject malicious SQL code and potentially access or modify database contents.",
-          "recommendation": "Use parameterized queries: cur.execute('SELECT id, password FROM users WHERE username = ?', (username,))",
+          "detail": "The username is interpolated directly into the SQL statement, allowing an attacker to inject arbitrary SQL.",
+          "recommendation": "Use parameterised queries, e.g. cur.execute('SELECT id, password FROM users WHERE username = ?', (username,))",
           "confidence": 1.0
         },
         {
-          "title": "Hardcoded Secret Key in Source Code",
-          "severity": "critical",
-          "category": "security",
-          "file": "auth.py",
-          "line": 10,
-          "detail": "The SECRET_KEY is hardcoded in the source file, making it visible in version control and accessible to anyone with code access. This violates secret management best practices.",
-          "recommendation": "Move the secret to environment variables or a secure secret management system: SECRET_KEY = os.environ.get('SECRET_KEY')",
-          "confidence": 1.0
-        },
-        {
-          "title": "Plaintext Password Storage and Comparison",
-          "severity": "critical",
+          "title": "Plaintext password comparison and storage",
+          "severity": "high",
           "category": "security",
           "file": "auth.py",
           "line": 24,
-          "detail": "Passwords are stored and compared in plaintext, and the comparison is not constant-time, making it vulnerable to timing attacks. If the database is compromised, all passwords are exposed.",
-          "recommendation": "Use a secure password hashing library like bcrypt or argon2: if bcrypt.checkpw(password.encode(), stored.encode()):",
+          "detail": "Passwords are compared as plain strings, implying they are stored in clear text and the comparison is not constant‑time, making brute‑force attacks easier.",
+          "recommendation": "Store passwords hashed with a strong algorithm (bcrypt, Argon2) and use a constant‑time comparison function for verification.",
           "confidence": 1.0
         },
         {
-          "title": "Predictable and Insecure Session Token Generation",
+          "title": "Predictable authentication token and no expiry",
           "severity": "high",
           "category": "security",
           "file": "auth.py",
-          "line": 25,
-          "detail": "Session tokens are generated by concatenating user_id with a secret key, making them predictable and vulnerable to brute force attacks. The format 'user_id-SECRET_KEY' is easily guessable.",
-          "recommendation": "Use cryptographically secure random tokens: token = secrets.token_urlsafe(32)",
+          "line": 26,
+          "detail": "Token is constructed as \"user_id‑SECRET_KEY\", which is deterministic and reveals the secret; there is also no expiration or signature verification.",
+          "recommendation": "Generate cryptographically random tokens (e.g., JWTs with signatures and expiry) and never embed the secret key in the token value.",
           "confidence": 0.9
         },
         {
-          "title": "No Session Expiration or Invalidation",
-          "severity": "high",
-          "category": "security",
-          "file": "auth.py",
-          "line": 32,
-          "detail": "Sessions never expire and there's no mechanism to invalidate them. Once issued, a token works forever, increasing the risk if tokens are compromised.",
-          "recommendation": "Add expiration timestamps to sessions and implement periodic cleanup of expired sessions.",
-          "confidence": 0.9
-        },
-        {
-          "title": "Global In-Memory Session Storage",
+          "title": "Database connection not closed",
           "severity": "medium",
           "category": "reliability",
+          "file": "auth.py",
+          "line": 13,
+          "detail": "sqlite3 connection is opened but never closed, leading to potential resource leaks under load.",
+          "recommendation": "Use a context manager (with sqlite3.connect(db_path) as conn:) or explicitly close the connection after use.",
+          "confidence": 0.9
+        },
+        {
+          "title": "Global mutable session store is not thread‑safe",
+          "severity": "low",
+          "category": "maintainability",
           "file": "auth.py",
           "line": 11,
-          "detail": "SESSIONS is a global dictionary that stores all sessions in memory. This doesn't scale, is lost on server restart, and is not shared across multiple processes or servers.",
-          "recommendation": "Use a persistent session store like Redis or database-backed sessions with proper serialization.",
-          "confidence": 0.8
-        },
-        {
-          "title": "Database Connection Not Properly Closed",
-          "severity": "medium",
-          "category": "reliability",
-          "file": "auth.py",
-          "line": 14,
-          "detail": "The get_user function opens a database connection but never closes it, leading to potential resource leaks if called frequently.",
-          "recommendation": "Use context managers or ensure connections are closed: with sqlite3.connect(db_path) as conn:",
-          "confidence": 0.8
-        },
-        {
-          "title": "Missing Input Validation and Sanitization",
-          "severity": "medium",
-          "category": "security",
-          "file": "auth.py",
-          "line": 20,
-          "detail": "No validation of username and password inputs for length, format, or malicious content before processing.",
-          "recommendation": "Add input validation: validate username/password length, format, and sanitize inputs.",
+          "detail": "SESSIONS is a plain dict accessed without synchronization, which can cause race conditions in multi‑threaded environments.",
+          "recommendation": "Replace with a thread‑safe store (e.g., collections.defaultdict with locks) or external session backend.",
           "confidence": 0.7
-        },
-        {
-          "title": "No Token Signature Verification",
-          "severity": "high",
-          "category": "security",
-          "file": "auth.py",
-          "line": 32,
-          "detail": "The current_user function doesn't verify that tokens are properly signed or formatted, relying only on dictionary lookup. This could allow forged tokens if an attacker guesses or obtains valid tokens.",
-          "recommendation": "Implement proper token validation with cryptographic signatures or use a established library like PyJWT.",
-          "confidence": 0.9
         }
       ],
       "suggested_tests": [
         {
-          "title": "SQL Injection Prevention Test",
-          "rationale": "Ensure that user inputs are properly sanitized and SQL injection attacks are prevented.",
+          "title": "Prevent SQL injection in login",
+          "rationale": "Ensures that malicious input cannot bypass authentication via crafted usernames.",
           "target_file": "auth.py",
           "scenario": {
-            "name": "Attempt SQL injection through username parameter",
+            "name": "Login fails with SQL‑injection payload",
             "steps": [
-              "Given a test database with user 'testuser'",
-              "When login is called with username \"testuser' OR '1'='1\" and any password",
-              "Then the function should return None or raise an error, not return a valid token"
+              "Given a user \"alice\" with password \"wonderland\" exists in the database",
+              "When the login function is called with username \"alice' OR '1'='1\" and any password",
+              "Then the function returns None (authentication fails)"
             ]
           },
-          "pytest_skeleton": "def test_sql_injection_prevention():\n    # Setup test database\n    # Attempt injection\n    # Verify safe behavior\n    pass"
+          "pytest_skeleton": "def test_login_sql_injection_prevention(tmp_path):\n    db = tmp_path / 'test.db'\n    # setup DB with a user\n    conn = sqlite3.connect(db)\n    conn.execute('CREATE TABLE users (id INTEGER PRIMARY KEY, username TEXT, password TEXT)')\n    conn.execute('INSERT INTO users (username, password) VALUES (?, ?)', ('alice', 'wonderland'))\n    conn.commit()\n    conn.close()\n    token = login(str(db), \"alice' OR '1'='1\", 'any')\n    assert token is None\n"
         },
         {
-          "title": "Password Hashing and Verification Test",
-          "rationale": "Verify that passwords are properly hashed and compared securely.",
+          "title": "Authentication token should be unpredictable and not contain secret",
+          "rationale": "Detects deterministic token generation that leaks the secret key and can be guessed.",
           "target_file": "auth.py",
           "scenario": {
-            "name": "Validate secure password handling",
+            "name": "Token does not expose secret key",
             "steps": [
-              "Given a user with a known password",
-              "When the password is stored and later verified",
-              "Then the plaintext password should not be stored in the database",
-              "And password verification should be constant-time"
+              "Given a user \"bob\" with password \"builder\" exists",
+              "When login is called with correct credentials",
+              "Then the returned token does not contain the SECRET_KEY value"
             ]
           },
-          "pytest_skeleton": "def test_password_security():\n    # Test that passwords are hashed\n    # Test timing attack resistance\n    pass"
+          "pytest_skeleton": "def test_token_is_not_predictable(tmp_path):\n    db = tmp_path / 'test.db'\n    conn = sqlite3.connect(db)\n    conn.execute('CREATE TABLE users (id INTEGER PRIMARY KEY, username TEXT, password TEXT)')\n    conn.execute('INSERT INTO users (username, password) VALUES (?, ?)', ('bob', 'builder'))\n    conn.commit()\n    conn.close()\n    token = login(str(db), 'bob', 'builder')\n    assert token is not None\n    assert 'sk_live_' not in token  # SECRET_KEY should not appear in token\n"
         },
         {
-          "title": "Session Token Security Test",
-          "rationale": "Ensure session tokens are cryptographically secure and unpredictable.",
+          "title": "Passwords must be stored hashed and verified securely",
+          "rationale": "Ensures that password handling follows best‑practice security (hashing, constant‑time compare).",
           "target_file": "auth.py",
           "scenario": {
-            "name": "Validate token generation security",
+            "name": "Login succeeds with correct password and fails with wrong password when passwords are hashed",
             "steps": [
-              "Given multiple user logins",
-              "When tokens are generated for each user",
-              "Then tokens should be unique and unpredictable",
-              "And tokens should not contain predictable patterns"
+              "Given a user \"carol\" with password \"s3cr3t\" stored as a bcrypt hash in the database",
+              "When login is called with username \"carol\" and password \"s3cr3t\"",
+              "Then login returns a token",
+              "When login is called with username \"carol\" and password \"wrong\"",
+              "Then login returns None"
             ]
           },
-          "pytest_skeleton": "def test_token_security():\n    # Generate multiple tokens\n    # Check for uniqueness and randomness\n    pass"
-        },
-        {
-          "title": "Session Expiration Test",
-          "rationale": "Verify that sessions expire properly and cannot be used indefinitely.",
-          "target_file": "auth.py",
-          "scenario": {
-            "name": "Test session timeout functionality",
-            "steps": [
-              "Given a user logs in and receives a token",
-              "When the session expiration time passes",
-              "Then the token should no longer be valid",
-              "And current_user should return None"
-            ]
-          },
-          "pytest_skeleton": "def test_session_expiration():\n    # Create session with timestamp\n    # Simulate time passage\n    # Verify expiration\n    pass"
+          "pytest_skeleton": ""
         }
       ],
-      "summary": "The file contains multiple critical security vulnerabilities including SQL injection, hardcoded secrets, weak authentication mechanisms, and insecure session management."
+      "summary": "The file contains several critical security flaws (hard‑coded secret, SQL injection, plaintext password handling, predictable tokens) and some reliability concerns (unclosed DB connections, non‑thread‑safe session store).",
+      "error": ""
     }
   ],
   "notes": "Prompt defects-v1. 3 file(s) analyzed."
