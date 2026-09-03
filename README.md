@@ -5,7 +5,7 @@ tests are missing, and how to fix a Playwright locator that stopped matching.
 
 Runs three ways: a CLI, a GitHub Action, and an HTTP API.
 
-[**Try it in a browser**](https://priya123z.github.io/#demos) ·
+[**Try it in a browser**](https://priya123z.github.io/#demos) — runs on your own free key, no install ·
 [Sample report](https://priya123z.github.io/ai-code-review/report/)
 
 [![Tests](https://github.com/Priya123z/ai-code-review/actions/workflows/tests.yml/badge.svg)](https://github.com/Priya123z/ai-code-review/actions/workflows/tests.yml)
@@ -67,8 +67,16 @@ ai-review heal --selector "#pay-now" --html page.html
 
 ## As an API
 
-`server/` is a FastAPI app that backs the demos on the portfolio. It runs on a
-free Hugging Face Space.
+`server/` is a FastAPI app exposing the same three capabilities over HTTP, for
+when you want one instance shared across a team rather than everyone running the
+CLI.
+
+It is not currently deployed anywhere. Hugging Face made Docker Spaces a paid
+feature partway through building this, and rather than pay for a demo, the
+portfolio now calls Groq straight from the browser with whatever key the visitor
+supplies — Groq allows cross-origin requests, so no server is needed for that.
+The service is still here, still tested, and `server/deploy-space.sh` will push
+it to a Space if you have PRO, or the Dockerfile will run anywhere.
 
 ```bash
 pip install -r server/requirements.txt
@@ -83,8 +91,15 @@ GET  /api/health                             → configured providers
 GET  /api/quota                              → what is left of today's budget
 ```
 
-Deploy it with `./server/deploy-space.sh <hf-username>`, then set `GROQ_API_KEY`
-in the Space settings.
+Run it locally with the commands above, or build the image:
+
+```bash
+docker build -f server/Dockerfile -t ai-review-api .
+docker run -p 7860:7860 -e GROQ_API_KEY=gsk_... ai-review-api
+```
+
+`./server/deploy-space.sh <hf-username>` pushes it to a Hugging Face Space, which
+needs a PRO subscription for Docker SDK spaces.
 
 ## Running on a free tier
 
