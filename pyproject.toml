@@ -18,13 +18,21 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=7.4", "pytest-cov>=4.1"]
+# fastapi and httpx are here because tests/test_server.py exercises the HTTP
+# layer through TestClient. Without them the suite does not even collect, which
+# is what a fresh clone hit while this said pytest and pytest-cov only.
+dev = [
+  "pytest>=7.4",
+  "pytest-cov>=4.1",
+  "fastapi>=0.110",
+  "httpx>=0.24",
+]
 
 [project.scripts]
 ai-review = "ai_review.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/Priya123z/AI-pipeline-report"
+Homepage = "https://github.com/Priya123z/ai-code-review"
 Portfolio = "https://priya123z.github.io"
 
 [tool.setuptools.packages.find]
@@ -35,4 +43,6 @@ ai_review = ["templates/*.j2"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-q"
+# No -q here. It used to be, which meant anyone typing `pytest -q` got -qq and
+# the summary line vanished — 45 dots and no "45 passed", which reads like the
+# suite did nothing.
