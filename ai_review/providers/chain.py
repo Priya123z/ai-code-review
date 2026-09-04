@@ -1,6 +1,6 @@
 """Try providers in order until one answers.
 
-The free tiers this runs on are small and go quiet without warning — two of the
+The free tiers this runs on are small and go quiet without warning  two of the
 OpenRouter free models returned 429 on the very first call while this was being
 built. A single provider is not enough to keep a public demo working, so the
 chain falls through Groq to OpenRouter and reports which one actually served the
@@ -55,7 +55,7 @@ class FallbackClient(BaseClient):
             except LLMError as exc:
                 errors.append(f"{client.name}: {exc}")
 
-        raise QuotaExhausted("every provider failed — " + "; ".join(errors))
+        raise QuotaExhausted("every provider failed  " + "; ".join(errors))
 
 
 def build_client(api_key: Optional[str] = None, model: Optional[str] = None) -> FallbackClient:

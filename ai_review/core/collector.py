@@ -28,7 +28,7 @@ def _excluded(rel: str, cfg: Config) -> bool:
 
 
 def _changed_files(cfg: Config) -> List[str]:
-    """Files changed vs the diff base — used in PR mode."""
+    """Files changed vs the diff base  used in PR mode."""
     try:
         out = subprocess.run(
             ["git", "-C", cfg.target, "diff", "--name-only", f"{cfg.diff_base}...HEAD"],

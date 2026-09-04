@@ -1,7 +1,7 @@
 """OpenRouter chat client, used as the fallback behind Groq.
 
-The free tier here is thin — 50 requests a day on an unfunded account, 20 a
-minute — so this is not the first choice for anything public. Paid model slugs
+The free tier here is thin  50 requests a day on an unfunded account, 20 a
+minute  so this is not the first choice for anything public. Paid model slugs
 are avoided by default because a zero-balance account starts returning 402.
 """
 from __future__ import annotations

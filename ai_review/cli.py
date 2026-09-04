@@ -70,7 +70,7 @@ def _cfg_from_args(a: argparse.Namespace) -> Config:
 def main(argv=None) -> int:
     # A redirected stdout is block buffered, so in a CI log nothing appeared until the
     # process exited: the per-file progress arrived all at once at the end, and the
-    # warnings below — stderr, which is not buffered — were timestamped ahead of the
+    # warnings below  stderr, which is not buffered  were timestamped ahead of the
     # summary they refer to. Line buffering makes the output arrive in the order it
     # was written, and makes a 30-second scan show progress while it runs.
     if hasattr(sys.stdout, "reconfigure"):
@@ -102,7 +102,7 @@ def main(argv=None) -> int:
     # Write the emitted tests before the summary rather than after it, so the
     # summary can report them and so every line the run prints to stdout is
     # contiguous. Printing them after meant a stdout line was still to come once
-    # the warnings below had started, and stdout and stderr are separate pipes —
+    # the warnings below had started, and stdout and stderr are separate pipes 
     # a CI log interleaves them by read order, not by write order.
     emitted = None
     if args.emit_tests:
@@ -131,7 +131,7 @@ def main(argv=None) -> int:
     # Nothing was reviewed, so there is nothing to say about the code. Exiting 0 here
     # would let a provider outage look like a passing gate.
     if report.files and report.reviewed_count == 0:
-        print("\n✕ no files could be reviewed — not reporting a result.", file=sys.stderr)
+        print("\n✕ no files could be reviewed  not reporting a result.", file=sys.stderr)
         return 2
 
     gate_failed = report.gate_fails(cfg.max_critical, cfg.max_high)
@@ -140,7 +140,7 @@ def main(argv=None) -> int:
               file=sys.stderr)
         if args.fail_on_gate:
             return 1
-        print("  (not failing the build — pass --fail-on-gate to enforce)")
+        print("  (not failing the build  pass --fail-on-gate to enforce)")
         return 0
     print("\n✓ quality gate passed")
     return 0

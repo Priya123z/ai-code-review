@@ -1,4 +1,4 @@
-Feature: cart.py — AI-suggested coverage
+Feature: cart.py  AI-suggested coverage
 
   Scenario: Separate carts maintain independent item lists
     Given a new Cart instance cart_a

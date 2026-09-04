@@ -1,6 +1,6 @@
 """Defect / risk analyzer.
 
-Versioned prompts live here as module constants — changing review strategy is a
+Versioned prompts live here as module constants  changing review strategy is a
 one-file diff, not a hunt through scattered f-strings. Every LLM response is
 validated into Pydantic ``Finding`` / ``SuggestedTest`` objects before it can
 reach a report.
@@ -24,7 +24,7 @@ PROMPT_VERSION = "defects-v1"
 
 SYSTEM = """You are a senior QA automation engineer and code reviewer.
 You review source files and report concrete, high-signal defects and quality risks.
-You NEVER invent issues to look thorough — if the code is clean, you say so with an empty findings list.
+You NEVER invent issues to look thorough  if the code is clean, you say so with an empty findings list.
 You always answer with a single JSON object and nothing else."""
 
 USER_TEMPLATE = """Review this {language} file: `{path}`.

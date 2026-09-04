@@ -1,4 +1,4 @@
-"""Runtime configuration — everything env-overridable so CI stays declarative."""
+"""Runtime configuration  everything env-overridable so CI stays declarative."""
 from __future__ import annotations
 
 import os
