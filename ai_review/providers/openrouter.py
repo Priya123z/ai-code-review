@@ -13,7 +13,10 @@ from typing import Optional
 
 import requests
 
-from ai_review.providers.base import (  # noqa: F401 - re-exported for callers
+# extract_json is imported but not called here: it is re-exported so that
+# `from ai_review.providers.openrouter import extract_json` keeps working for
+# callers and tests that predate the split into providers/base.py.
+from ai_review.providers.base import (  # noqa: F401
     BaseClient,
     LLMError,
     QuotaExhausted,

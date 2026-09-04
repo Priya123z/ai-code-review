@@ -40,7 +40,7 @@ _FENCE = re.compile(r"```(?:json)?\s*(.*?)```", re.DOTALL)
 
 
 def extract_json(text: str) -> dict:
-    """Best-effort JSON extraction  handles fenced blocks and leading prose."""
+    """Best-effort JSON extraction, handling fenced blocks and leading prose."""
     text = text.strip()
     try:
         return json.loads(text)

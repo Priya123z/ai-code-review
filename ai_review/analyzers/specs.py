@@ -56,7 +56,7 @@ class SpecSuite(BaseModel):
         return f"Feature: {self.feature}\n\n{body}\n"
 
     def to_pytest_file(self) -> str:
-        header = f'"""Generated from a requirement. Review before relying on these."""\n\nimport pytest\n\n'
+        header = '"""Generated from a requirement. Review before relying on these."""\n\nimport pytest\n\n'
         blocks = []
         for case in self.pytest_cases:
             skeleton = case.skeleton.strip() or f"def {case.function_name}():\n    pass"

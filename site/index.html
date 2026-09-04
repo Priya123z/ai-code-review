@@ -82,8 +82,8 @@
     <span class="pill">◆ AI QA Copilot for CI/CD · open source</span>
     <h1>Ship code. <span class="grad">The AI reviews it.</span></h1>
     <p class="lede">
-      <b>ai-code-review</b> plugs into your pipeline, reads every changed file with an LLM  <em>with cross-file
-      context</em>  and flags real defects, security holes and reliability risks. Then it writes the
+      <b>ai-code-review</b> plugs into your pipeline and reads every changed file with an LLM, <em>with
+      cross-file context</em>, flagging real defects, security holes and reliability risks. Then it writes the
       tests you're missing, repairs broken UI locators, and publishes a shareable report. Runs in GitHub
       Actions. Costs nothing to start.
     </p>
@@ -101,26 +101,26 @@
 
   <section id="capabilities">
     <h2>Capabilities</h2>
-    <p class="sec-lede">Four real AI-in-testing capabilities  the workflow from my resume, shipped.</p>
+    <p class="sec-lede">Four real AI-in-testing capabilities: the workflow from my resume, shipped.</p>
     <div class="grid">
       <div class="card">
         <span class="skill">Defect detection · RAG context</span>
         <h3>🐞 Finds defects across files</h3>
         <p>Each file is reviewed with a compact map of its sibling modules, so the review catches
-        <em>integration</em> bugs  e.g. "payments never verifies the token that auth issues." Retrieval-augmented
+        <em>integration</em> bugs, for example "payments never verifies the token that auth issues". Retrieval-augmented
         context, no vector DB needed.</p>
       </div>
       <div class="card">
         <span class="skill">LLM-assisted test generation</span>
         <h3>🧪 Writes the missing tests</h3>
         <p>Every gap becomes a Gherkin <code>.feature</code> and a runnable pytest skeleton.
-        <code>ai-review gen-tests</code> writes them to disk  <a href="report/generated_tests/cart.feature" style="color:var(--accent)">real files</a> you commit, not screenshots.</p>
+        <code>ai-review gen-tests</code> writes them to disk as <a href="report/generated_tests/cart.feature" style="color:var(--accent)">real files</a> you commit, not screenshots.</p>
       </div>
       <div class="card">
         <span class="skill">Self-healing test concepts</span>
         <h3>🔧 Repairs broken locators</h3>
         <p><code>ai-review heal</code> takes a selector that stopped matching and the current DOM, and returns a
-        resilient Playwright locator  preferring role / label / test-id over brittle CSS.</p>
+        resilient Playwright locator, preferring role, label and test-id over brittle CSS.</p>
       </div>
       <div class="card">
         <span class="skill">Prompt engineering · quality gate</span>
@@ -133,7 +133,7 @@
 
   <section id="selfheal">
     <h2>Self-healing, for real</h2>
-    <p class="sec-lede">A broken selector, the live DOM, a resilient fix  produced by <code>ai-review heal</code>.</p>
+    <p class="sec-lede">A broken selector, the live DOM, and a resilient fix, produced by <code>ai-review heal</code>.</p>
     <pre class="block"><span class="c"># The test used to click "#pay-now-btn". A redesign removed that id.</span>
 <span class="k">$</span> ai-review heal --selector <span class="g">"#pay-now-btn"</span> --html checkout.html \
            --desc <span class="g">"the button that submits the payment"</span>
@@ -159,7 +159,7 @@
       <span class="step">Pages / PR comment / gate</span>
     </div>
     <p style="color:var(--muted);margin-top:18px">
-      Every LLM response is validated through Pydantic before it can reach a report  malformed or
+      Every LLM response is validated through Pydantic before it can reach a report. Malformed or
       invented output fails at the boundary instead of poisoning results a human later trusts. The full
       test suite runs green with <b>no API key</b> because the LLM client is mocked.
     </p>
@@ -167,7 +167,7 @@
 
   <section id="use">
     <h2>Use it in 60 seconds</h2>
-    <pre class="block"><span class="c"># GitHub Actions  add the GROQ_API_KEY secret, then:</span>
+    <pre class="block"><span class="c"># GitHub Actions: add the GROQ_API_KEY secret, then:</span>
 - uses: Priya123z/ai-code-review@main
   with:
     target: ./src
@@ -189,7 +189,7 @@
   </section>
 
   <footer>
-    Built by <a href="https://priya123z.github.io">Priya Bhagoriya</a>  QA Automation Engineer &amp; SDET ·
+    Built by <a href="https://priya123z.github.io">Priya Bhagoriya</a>, QA Automation Engineer and SDET ·
     <a href="https://github.com/Priya123z/ai-code-review">source</a> ·
     <a href="https://linkedin.com/in/priya-bhagoriya">LinkedIn</a> ·
     <a href="https://priya123z.github.io/Priya_Bhagoriya_Resume.pdf">resume</a>

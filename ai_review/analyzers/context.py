@@ -1,7 +1,7 @@
 """Lightweight retrieval-augmented context.
 
 Before reviewing a file, we give the model a compact map of the *other* modules
-in the change set  their classes and function signatures. That cross-file
+in the change set: their classes and function signatures. That cross-file
 context is what lets the review catch integration defects a single-file linter
 never could (e.g. "payments.process_order never verifies the token that
 auth.current_user issues"). It's RAG in miniature: retrieve related code, then

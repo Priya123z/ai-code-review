@@ -1,7 +1,6 @@
 """Render a validated Report into report.json + a self-contained report.html."""
 from __future__ import annotations
 
-import json
 import os
 from typing import Dict
 

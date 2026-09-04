@@ -1,8 +1,8 @@
 """Request budgeting for the public demo.
 
 The demo runs on a free Groq key: 30 requests/min, 1000/day, 8000 tokens/min,
-200k tokens/day. Tokens per minute is what actually binds  a couple of thousand
-token reviews will hit 8000 TPM long before they hit 30 RPM  so this counts
+200k tokens/day. Tokens per minute is what actually binds: a couple of thousand
+token reviews will hit 8000 TPM long before they hit 30 RPM, so this counts
 tokens as well as requests.
 
 Everything is in memory. The Space restarts and the counters reset, which is fine

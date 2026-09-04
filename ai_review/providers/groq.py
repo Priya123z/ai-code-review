@@ -17,7 +17,7 @@ from typing import Optional
 
 import requests
 
-from ai_review.providers.base import BaseClient, LLMError, QuotaExhausted, extract_json
+from ai_review.providers.base import BaseClient, LLMError, QuotaExhausted
 
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 
@@ -48,8 +48,9 @@ class GroqClient(BaseClient):
     def configured(self) -> bool:
         return bool(self.api_key)
 
-    # Groq honours response_format, so with as_json there is nothing to scrape;
-    # extract_json still runs above as a cheap guard if a model ignores it.
+    # Groq honours response_format, so with as_json there is nothing to scrape.
+    # BaseClient.chat_json still runs extract_json over the result, as a cheap
+    # guard for the day a model ignores it.
     def chat(self, system: str, user: str, as_json: bool = False) -> str:
         if not self.configured:
             raise LLMError("GROQ_API_KEY is not set.")

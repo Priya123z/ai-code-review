@@ -1,4 +1,4 @@
-Feature: auth.py  AI-suggested coverage
+Feature: auth.py, AI-suggested coverage
 
   Scenario: Login fails with SQL‑injection payload
     Given a user "alice" with password "wonderland" exists in the database

@@ -1,5 +1,4 @@
 """Tests for the RAG-context, self-heal, and test-emit capabilities (mocked)."""
-import json
 import os
 
 from ai_review.analyzers.context import build_repo_context

@@ -1,4 +1,4 @@
-"""Cart & inventory for the demo shop API  concurrency and edge-case bugs."""
+"""Cart and inventory for the demo shop API, with concurrency and edge-case bugs."""
 
 
 class Cart:

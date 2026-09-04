@@ -83,7 +83,7 @@ class FileReport(BaseModel):
 
 
 class Report(BaseModel):
-    """The top-level artifact  serialized to JSON and rendered to HTML."""
+    """The top-level artifact, serialized to JSON and rendered to HTML."""
 
     project: str = "unknown"
     model: str = "unknown"
@@ -107,7 +107,7 @@ class Report(BaseModel):
     @computed_field
     @property
     def risk_score(self) -> int:
-        """Weighted score  the single number a pipeline gate can threshold on."""
+        """Weighted score: the single number a pipeline gate can threshold on."""
         return sum(f.severity.weight for f in self.all_findings)
 
     @computed_field

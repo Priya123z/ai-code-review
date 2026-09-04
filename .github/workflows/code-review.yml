@@ -40,7 +40,7 @@ jobs:
             echo "present=true" >> "$GITHUB_OUTPUT"
           else
             echo "present=false" >> "$GITHUB_OUTPUT"
-            echo "::warning::no GROQ_API_KEY or OPENROUTER_API_KEY  skipping the live scan."
+            echo "::warning::no GROQ_API_KEY or OPENROUTER_API_KEY, skipping the live scan."
           fi
 
       - name: Run AI scan on demo module
@@ -60,10 +60,10 @@ jobs:
           f = [x for fr in r["files"] for x in fr["findings"]]
           sev = {}
           for x in f: sev[x["severity"]] = sev.get(x["severity"], 0) + 1
-          print(f"**{len(f)} findings**  " + ", ".join(f"{k}: {v}" for k, v in sev.items()))
+          print(f"**{len(f)} findings**: " + ", ".join(f"{k}: {v}" for k, v in sev.items()))
           print()
           for x in f[:10]:
-              print(f"- `{x['severity']}` **{x['title']}**  {x['detail']}")
+              print(f"- `{x['severity']}` **{x['title']}**: {x['detail']}")
           PY
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -86,8 +86,8 @@ jobs:
             const sev = {};
             for (const x of f) sev[x.severity] = (sev[x.severity]||0)+1;
             const line = Object.entries(sev).map(([k,v]) => `${k}: ${v}`).join(', ');
-            let body = `## AI code review\n\n**${f.length} findings**  ${line}\n\n`;
-            for (const x of f.slice(0,10)) body += `- \`${x.severity}\` **${x.title}**  ${x.detail}\n`;
+            let body = `## AI code review\n\n**${f.length} findings**: ${line}\n\n`;
+            for (const x of f.slice(0,10)) body += `- \`${x.severity}\` **${x.title}**: ${x.detail}\n`;
             body += `\n_Model: ${r.model}. Full HTML report in the run artifacts._`;
             await github.rest.issues.createComment({
               issue_number: context.issue.number,

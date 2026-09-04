@@ -5,7 +5,7 @@ tests are missing, and how to fix a Playwright locator that stopped matching.
 
 Runs three ways: a CLI, a GitHub Action, and an HTTP API.
 
-[**Try it in a browser**](https://priya123z.github.io/#demos)  runs on your own free key, no install ·
+[**Try it in a browser**](https://priya123z.github.io/#demos): no install, no key needed ·
 [Sample report](https://priya123z.github.io/ai-code-review/report/)
 
 [![Tests](https://github.com/Priya123z/ai-code-review/actions/workflows/tests.yml/badge.svg)](https://github.com/Priya123z/ai-code-review/actions/workflows/tests.yml)
@@ -27,8 +27,8 @@ human one, with the boring findings already written down.
 ## When you would reach for this
 
 - **Before you open a pull request.** `ai-review scan . --diff` looks only at
-  what you changed. The point is that the boring findings  mutable default,
-  unguarded division, a missing negative-path test  are already written down
+  what you changed. The point is that the boring findings (a mutable default, an
+  unguarded division, a missing negative-path test) are already written down
   before a human spends attention on them.
 - **On a repository nobody has reviewed in a year.** Run it over a directory and
   read the report as a triage list. It is unusually good at spotting where tests
@@ -46,7 +46,7 @@ human one, with the boring findings already written down.
   installing a CLI and finding their own key.
 
 Where **not** to use it: as the review. It has no idea what your product is
-supposed to do, so it cannot tell you a feature is wrong  only that a line of
+supposed to do, so it cannot tell you a feature is wrong, only that a line of
 code is likely to behave badly. Treat it as the pass that happens before the
 one that matters.
 
@@ -97,12 +97,20 @@ ai-review heal --selector "#pay-now" --html page.html
 when you want one instance shared across a team rather than everyone running the
 CLI.
 
-It is not currently deployed anywhere. Hugging Face made Docker Spaces a paid
-feature partway through building this, and rather than pay for a demo, the
-portfolio now calls Groq straight from the browser with whatever key the visitor
-supplies  Groq allows cross-origin requests, so no server is needed for that.
-The service is still here, still tested, and `server/deploy-space.sh` will push
-it to a Space if you have PRO, or the Dockerfile will run anywhere.
+This particular service is not deployed anywhere. Hugging Face made Docker
+Spaces a paid feature partway through building it, and paying for a demo was not
+worth it. It is still here, still tested, and the Dockerfile runs anywhere;
+`server/deploy-space.sh` pushes it to a Space if you have PRO.
+
+The browser demos on the portfolio are served by something smaller instead: a
+Cloudflare Worker holding a Groq key as a secret, on the free plan, so a visitor
+gets a live answer without being asked to sign up for anything. It reimplements
+the same three prompts in JavaScript rather than importing this package, and it
+lives
+[in the portfolio repository](https://github.com/Priya123z/Priya123z.github.io/tree/main/worker).
+Reach for `server/` when you want the real pipeline (cross-file context, the
+gate, emitted test files) behind an HTTP boundary for a team. Reach for the
+Worker when you want three prompts answered on a static page for nothing.
 
 ```bash
 pip install -r server/requirements.txt
@@ -132,7 +140,7 @@ needs a PRO subscription for Docker SDK spaces.
 This is most of the engineering, so it is worth being explicit.
 
 Groq's free tier allows 30 requests a minute, 1000 a day, 8000 tokens a minute
-and 200k a day. **Tokens per minute is what binds**  a couple of 2000-token
+and 200k a day. **Tokens per minute is what binds**: a couple of 2000-token
 reviews exhaust the minute long before they get near 30 requests. So the budget
 is counted in tokens, and a request is refused before it is sent rather than
 after a 429 comes back.
@@ -143,7 +151,7 @@ written, which is why there is a chain at all rather than one provider and hope.
 
 When the budget is spent the API answers `200` with a pre-generated example
 labelled `"source": "cached"`. It does not pretend to be live, and it does not
-return a 500  a dead demo teaches a visitor nothing. Anyone who wants unlimited
+return a 500, because a dead demo teaches a visitor nothing. Anyone who wants unlimited
 runs sends their own key in `X-API-Key` and skips the budget entirely.
 
 **It will not tell you your code is fine when it could not read it.** A provider
@@ -155,8 +163,8 @@ fails if nothing was reviewed, and the CLI exits `2`.
 
 | Variable | Default | |
 |---|---|---|
-| `GROQ_API_KEY` |  | Primary provider |
-| `OPENROUTER_API_KEY` |  | Fallback |
+| `GROQ_API_KEY` | none | Primary provider |
+| `OPENROUTER_API_KEY` | none | Fallback |
 | `AI_REVIEW_MODEL` | provider default | Overridden by `--model` |
 | `AI_REVIEW_MAX_FILES` | `12` | Cap per run |
 | `AI_REVIEW_MAX_CRITICAL` | `0` | Gate threshold |

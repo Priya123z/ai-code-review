@@ -5,11 +5,10 @@ mechanical: the element is still on the page, just addressed differently. This
 asks the model to repair a broken selector against the *current* DOM and return
 a resilient, Playwright-ready locator (preferring role/text/test-id over brittle
 CSS paths). It's the "self-healing test" idea from my resume, scoped to one
-honest, verifiable step  the engineer still reviews the suggestion.
+honest, verifiable step, and the engineer still reviews the suggestion.
 """
 from __future__ import annotations
 
-from typing import Optional
 
 from pydantic import BaseModel, Field
 

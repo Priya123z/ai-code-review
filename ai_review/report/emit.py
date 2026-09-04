@@ -1,7 +1,7 @@
 """Turn the report's suggested tests into real files on disk.
 
 The report tells you what tests are missing; this writes them out as runnable
-starting points  a Gherkin `.feature` per file and a pytest module with the
+starting points: a Gherkin `.feature` per file and a pytest module with the
 generated skeletons. LLM-assisted test generation you can actually commit.
 """
 from __future__ import annotations
@@ -29,7 +29,7 @@ def emit_tests(report: Report, out_dir: str) -> Dict[str, int]:
 
         scenarios = [t.scenario for t in fr.suggested_tests if t.scenario]
         if scenarios:
-            feature = f"Feature: {fr.path}  AI-suggested coverage\n\n" + "\n\n".join(
+            feature = f"Feature: {fr.path}, AI-suggested coverage\n\n" + "\n\n".join(
                 s.to_feature() for s in scenarios
             )
             with open(os.path.join(out_dir, f"{slug}.feature"), "w", encoding="utf-8") as fh:

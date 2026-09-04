@@ -1,4 +1,4 @@
-Feature: payments.py  AI-suggested coverage
+Feature: payments.py, AI-suggested coverage
 
   Scenario: Reject invalid payment amounts
     Given a payment gateway mock
