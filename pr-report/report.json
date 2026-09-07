@@ -1,8 +1,8 @@
 {
   "project": "PR #2 (diff)",
   "model": "openai/gpt-oss-120b",
-  "generated_at": "2026-09-07T07:28:11.645746+00:00",
-  "commit": "61895f3",
+  "generated_at": "2026-09-07T07:49:21.290536+00:00",
+  "commit": "427acd7",
   "files": [
     {
       "path": "examples/flask_shop/coupons.py",
@@ -13,113 +13,111 @@
           "severity": "high",
           "category": "maintainability",
           "file": "examples/flask_shop/coupons.py",
-          "line": 7,
-          "detail": "Using a list as a default value causes the same list instance to be shared across all CouponBook objects, leading to unexpected state leakage.",
-          "recommendation": "Change the signature to def __init__(self, codes=None): and inside set self.codes = list(codes) if codes is not None else []",
-          "confidence": 1.0
+          "line": 9,
+          "detail": "Using a mutable default (codes=[]) causes all CouponBook instances to share the same list, leading to unexpected cross‑instance state.",
+          "recommendation": "Change the signature to def __init__(self, codes=None): and inside set self.codes = [] if codes is None else list(codes).",
+          "confidence": 0.99
         },
         {
           "title": "Division by zero in average_discount when no coupons are present",
-          "severity": "medium",
+          "severity": "critical",
           "category": "reliability",
           "file": "examples/flask_shop/coupons.py",
-          "line": 17,
+          "line": 18,
           "detail": "The method divides by len(self.codes) without checking for zero, raising ZeroDivisionError for an empty coupon book.",
-          "recommendation": "Return 0 or raise a custom exception when self.codes is empty; e.g., if not self.codes: return 0",
-          "confidence": 1.0
+          "recommendation": "Return 0 or raise a custom exception when self.codes is empty before performing the division.",
+          "confidence": 0.98
         },
         {
-          "title": "apply_best_coupon crashes on empty coupon list",
+          "title": "apply_best_coupon fails on empty coupon list",
+          "severity": "critical",
+          "category": "reliability",
+          "file": "examples/flask_shop/coupons.py",
+          "line": 22,
+          "detail": "Calling max() on an empty list raises ValueError, causing the function to crash when no coupons are supplied.",
+          "recommendation": "Add a guard: if not codes: return total (or raise a defined exception) before calling max().",
+          "confidence": 0.97
+        },
+        {
+          "title": "No validation of coupon percent values in add()",
           "severity": "medium",
-          "category": "reliability",
+          "category": "security",
           "file": "examples/flask_shop/coupons.py",
-          "line": 21,
-          "detail": "max() raises ValueError when called with an empty sequence, so calling apply_best_coupon([], total) fails.",
-          "recommendation": "Check if codes is empty and return the original total (or raise a domain‑specific exception) before calling max",
-          "confidence": 1.0
-        },
-        {
-          "title": "No validation of coupon percent in add()",
-          "severity": "low",
-          "category": "reliability",
-          "file": "examples/flask_shop/coupons.py",
-          "line": 11,
-          "detail": "Negative or >100 percent values can be added, resulting in nonsensical discounts or price increases.",
-          "recommendation": "Validate that percent is between 0 and 100 (inclusive) and raise ValueError otherwise",
+          "line": 12,
+          "detail": "Negative or >100 percent values can produce negative totals or discounts greater than the purchase amount, which may be exploited.",
+          "recommendation": "Validate that 0 <= percent <= 100 and raise ValueError for out‑of‑range inputs.",
           "confidence": 0.9
         }
       ],
       "suggested_tests": [
         {
-          "title": "CouponBook instances do not share default codes list",
-          "rationale": "Detects the mutable default argument bug.",
+          "title": "CouponBook instances have independent code lists",
+          "rationale": "Ensures the mutable default bug is fixed and instances do not share state.",
           "target_file": "examples/flask_shop/coupons.py",
           "scenario": {
-            "name": "Separate CouponBook objects have independent code collections",
+            "name": "Independent coupon books",
             "steps": [
-              "Given a new CouponBook instance cb1",
-              "And a new CouponBook instance cb2",
-              "When I add a coupon \"SAVE10\" with 10% to cb1",
-              "Then cb2.codes should be empty"
+              "Given two CouponBook instances are created without passing codes",
+              "When a coupon is added to the first instance",
+              "Then the second instance's codes list remains empty"
             ]
           },
-          "pytest_skeleton": "def test_couponbook_default_list_is_not_shared():\n    cb1 = CouponBook()\n    cb2 = CouponBook()\n    cb1.add('SAVE10', 10)\n    assert cb2.codes == []"
+          "pytest_skeleton": "def test_couponbook_independent_instances():\n    cb1 = CouponBook()\n    cb2 = CouponBook()\n    cb1.add('SAVE10', 10)\n    assert len(cb1.codes) == 1\n    assert len(cb2.codes) == 0"
         },
         {
           "title": "average_discount returns 0 for empty coupon book",
-          "rationale": "Ensures graceful handling of empty coupon collections.",
+          "rationale": "Verifies handling of division by zero edge case.",
           "target_file": "examples/flask_shop/coupons.py",
           "scenario": {
-            "name": "average_discount handles empty coupon list without error",
+            "name": "Average discount with no coupons",
             "steps": [
               "Given a CouponBook with no coupons",
-              "When I call average_discount with a total of 100",
+              "When average_discount is called with any total",
               "Then the result should be 0"
             ]
           },
-          "pytest_skeleton": "def test_average_discount_empty_book_returns_zero():\n    cb = CouponBook()\n    assert cb.average_discount(100) == 0"
+          "pytest_skeleton": "def test_average_discount_empty():\n    cb = CouponBook()\n    assert cb.average_discount(100) == 0"
         },
         {
           "title": "apply_best_coupon returns original total when no coupons are provided",
-          "rationale": "Prevents crashes on empty input and defines expected behaviour.",
+          "rationale": "Ensures function does not raise on empty input and behaves gracefully.",
           "target_file": "examples/flask_shop/coupons.py",
           "scenario": {
-            "name": "apply_best_coupon with empty coupon list",
+            "name": "Apply best coupon with empty list",
             "steps": [
-              "Given a total amount of 200",
-              "And an empty list of coupons",
-              "When I apply_best_coupon",
-              "Then the returned total should equal the original amount"
+              "Given an empty list of coupons",
+              "When apply_best_coupon is called with a total of 200",
+              "Then the returned total should be 200"
             ]
           },
-          "pytest_skeleton": "def test_apply_best_coupon_empty_list_returns_original_total():\n    total = 200\n    assert apply_best_coupon(total, []) == total"
+          "pytest_skeleton": "def test_apply_best_coupon_empty():\n    total = 200\n    assert apply_best_coupon(total, []) == total"
         },
         {
           "title": "add rejects invalid percent values",
-          "rationale": "Validates input range to avoid negative or excessive discounts.",
+          "rationale": "Confirms input validation prevents negative or overly large discounts.",
           "target_file": "examples/flask_shop/coupons.py",
           "scenario": {
-            "name": "add method validates percent bounds",
+            "name": "Add coupon with invalid percent",
             "steps": [
-              "Given a CouponBook",
-              "When I try to add a coupon with percent -5",
+              "Given a CouponBook instance",
+              "When add is called with a percent of -5",
               "Then a ValueError should be raised"
             ]
           },
-          "pytest_skeleton": "def test_add_invalid_percent_raises():\n    cb = CouponBook()\n    with pytest.raises(ValueError):\n        cb.add('BAD', -5)"
+          "pytest_skeleton": "import pytest\n\ndef test_add_invalid_percent():\n    cb = CouponBook()\n    with pytest.raises(ValueError):\n        cb.add('BAD', -5)\n    with pytest.raises(ValueError):\n        cb.add('OVER', 150)"
         }
       ],
-      "summary": "The module contains functional logic but has several reliability and maintainability issues such as mutable default arguments and missing edge‑case handling.",
+      "summary": "The module contains functional logic but has several reliability and maintainability issues, notably mutable defaults, division by zero risks, and lack of input validation.",
       "error": ""
     }
   ],
   "notes": "Prompt defects-v1. 1 file(s) analyzed.",
-  "risk_score": 63,
+  "risk_score": 250,
   "severity_breakdown": {
-    "critical": 0,
+    "critical": 2,
     "high": 1,
-    "medium": 2,
-    "low": 1,
+    "medium": 1,
+    "low": 0,
     "info": 0
   },
   "reviewed_count": 1,

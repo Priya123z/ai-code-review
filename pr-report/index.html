@@ -67,34 +67,34 @@
       <div class="logo">◆</div>
       <div>
         <h1>Code review report</h1>
-        <div class="sub">PR #2 (diff) · commit <code>61895f3</code></div>
+        <div class="sub">PR #2 (diff) · commit <code>427acd7</code></div>
       </div>
     </div>
     <div class="meta">
       model <code>openai/gpt-oss-120b</code><br/>
-      generated 2026-09-07 07:28:11 UTC
+      generated 2026-09-07 07:49:21 UTC
     </div>
   </div>
 
   
   <div style="margin-bottom:18px">
-    <span class="gate pass">
-      ✓ QUALITY GATE PASSED
+    <span class="gate fail">
+      ✕ QUALITY GATE FAILED
     </span>
   </div>
 
   <div class="cards">
-    <div class="card"><div class="n">63</div><div class="l">Risk score</div></div>
+    <div class="card"><div class="n">250</div><div class="l">Risk score</div></div>
     <div class="card"><div class="n">4</div><div class="l">Findings</div></div>
     <div class="card"><div class="n">4</div><div class="l">Suggested tests</div></div>
     <div class="card"><div class="n">1</div><div class="l">Files reviewed</div></div>
   </div>
 
   <div class="bar">
-    <span style="flex:1;background:#ff9f45"></span><span style="flex:2;background:#ffd166"></span><span style="flex:1;background:#8ac6ff"></span>
+    <span style="flex:2;background:#ff4d6d"></span><span style="flex:1;background:#ff9f45"></span><span style="flex:1;background:#ffd166"></span>
   </div>
   <div class="legend">
-    <span><span class="dot" style="background:#ff4d6d"></span>critical · 0</span><span><span class="dot" style="background:#ff9f45"></span>high · 1</span><span><span class="dot" style="background:#ffd166"></span>medium · 2</span><span><span class="dot" style="background:#8ac6ff"></span>low · 1</span><span><span class="dot" style="background:#9aa4b2"></span>info · 0</span>
+    <span><span class="dot" style="background:#ff4d6d"></span>critical · 2</span><span><span class="dot" style="background:#ff9f45"></span>high · 1</span><span><span class="dot" style="background:#ffd166"></span>medium · 1</span><span><span class="dot" style="background:#8ac6ff"></span>low · 0</span><span><span class="dot" style="background:#9aa4b2"></span>info · 0</span>
   </div>
 
   <h2>Findings by file</h2>
@@ -102,7 +102,7 @@
   <div class="file">
     <div class="file-h">
       <span class="path">examples/flask_shop/coupons.py</span>
-      <span class="fsum">The module contains functional logic but has several reliability and maintainability issues such as mutable default arguments and missing edge‑case handling.</span>
+      <span class="fsum">The module contains functional logic but has several reliability and maintainability issues, notably mutable defaults, division by zero risks, and lack of input validation.</span>
     </div>
     
       
@@ -110,44 +110,44 @@
         <div class="finding-h">
           <span class="sev" style="background:#ff9f45">high</span>
           <span class="cat">maintainability</span>
-          <span class="loc">line 7</span>
+          <span class="loc">line 9</span>
           <div class="ftitle">Mutable default argument in CouponBook.__init__</div>
         </div>
-        <div class="detail">Using a list as a default value causes the same list instance to be shared across all CouponBook objects, leading to unexpected state leakage.</div>
-        <div class="rec"><b>Fix:</b> Change the signature to def __init__(self, codes=None): and inside set self.codes = list(codes) if codes is not None else []</div>
+        <div class="detail">Using a mutable default (codes=[]) causes all CouponBook instances to share the same list, leading to unexpected cross‑instance state.</div>
+        <div class="rec"><b>Fix:</b> Change the signature to def __init__(self, codes=None): and inside set self.codes = [] if codes is None else list(codes).</div>
       </div>
       
       <div class="finding">
         <div class="finding-h">
-          <span class="sev" style="background:#ffd166">medium</span>
+          <span class="sev" style="background:#ff4d6d">critical</span>
           <span class="cat">reliability</span>
-          <span class="loc">line 17</span>
+          <span class="loc">line 18</span>
           <div class="ftitle">Division by zero in average_discount when no coupons are present</div>
         </div>
         <div class="detail">The method divides by len(self.codes) without checking for zero, raising ZeroDivisionError for an empty coupon book.</div>
-        <div class="rec"><b>Fix:</b> Return 0 or raise a custom exception when self.codes is empty; e.g., if not self.codes: return 0</div>
+        <div class="rec"><b>Fix:</b> Return 0 or raise a custom exception when self.codes is empty before performing the division.</div>
+      </div>
+      
+      <div class="finding">
+        <div class="finding-h">
+          <span class="sev" style="background:#ff4d6d">critical</span>
+          <span class="cat">reliability</span>
+          <span class="loc">line 22</span>
+          <div class="ftitle">apply_best_coupon fails on empty coupon list</div>
+        </div>
+        <div class="detail">Calling max() on an empty list raises ValueError, causing the function to crash when no coupons are supplied.</div>
+        <div class="rec"><b>Fix:</b> Add a guard: if not codes: return total (or raise a defined exception) before calling max().</div>
       </div>
       
       <div class="finding">
         <div class="finding-h">
           <span class="sev" style="background:#ffd166">medium</span>
-          <span class="cat">reliability</span>
-          <span class="loc">line 21</span>
-          <div class="ftitle">apply_best_coupon crashes on empty coupon list</div>
+          <span class="cat">security</span>
+          <span class="loc">line 12</span>
+          <div class="ftitle">No validation of coupon percent values in add()</div>
         </div>
-        <div class="detail">max() raises ValueError when called with an empty sequence, so calling apply_best_coupon([], total) fails.</div>
-        <div class="rec"><b>Fix:</b> Check if codes is empty and return the original total (or raise a domain‑specific exception) before calling max</div>
-      </div>
-      
-      <div class="finding">
-        <div class="finding-h">
-          <span class="sev" style="background:#8ac6ff">low</span>
-          <span class="cat">reliability</span>
-          <span class="loc">line 11</span>
-          <div class="ftitle">No validation of coupon percent in add()</div>
-        </div>
-        <div class="detail">Negative or >100 percent values can be added, resulting in nonsensical discounts or price increases.</div>
-        <div class="rec"><b>Fix:</b> Validate that percent is between 0 and 100 (inclusive) and raise ValueError otherwise</div>
+        <div class="detail">Negative or >100 percent values can produce negative totals or discounts greater than the purchase amount, which may be exploited.</div>
+        <div class="rec"><b>Fix:</b> Validate that 0 <= percent <= 100 and raise ValueError for out‑of‑range inputs.</div>
       </div>
       
     
@@ -157,60 +157,63 @@
       <h2 style="margin:0 0 12px">Suggested tests</h2>
       
       <div class="test">
-        <div class="tt">CouponBook instances do not share default codes list</div>
-        <div class="detail">Detects the mutable default argument bug.</div>
-        <pre>Scenario: Separate CouponBook objects have independent code collections
-  Given a new CouponBook instance cb1
-  And a new CouponBook instance cb2
-  When I add a coupon "SAVE10" with 10% to cb1
-  Then cb2.codes should be empty
+        <div class="tt">CouponBook instances have independent code lists</div>
+        <div class="detail">Ensures the mutable default bug is fixed and instances do not share state.</div>
+        <pre>Scenario: Independent coupon books
+  Given two CouponBook instances are created without passing codes
+  When a coupon is added to the first instance
+  Then the second instance's codes list remains empty
 </pre>
-        <pre>def test_couponbook_default_list_is_not_shared():
+        <pre>def test_couponbook_independent_instances():
     cb1 = CouponBook()
     cb2 = CouponBook()
     cb1.add('SAVE10', 10)
-    assert cb2.codes == []</pre>
+    assert len(cb1.codes) == 1
+    assert len(cb2.codes) == 0</pre>
       </div>
       
       <div class="test">
         <div class="tt">average_discount returns 0 for empty coupon book</div>
-        <div class="detail">Ensures graceful handling of empty coupon collections.</div>
-        <pre>Scenario: average_discount handles empty coupon list without error
+        <div class="detail">Verifies handling of division by zero edge case.</div>
+        <pre>Scenario: Average discount with no coupons
   Given a CouponBook with no coupons
-  When I call average_discount with a total of 100
+  When average_discount is called with any total
   Then the result should be 0
 </pre>
-        <pre>def test_average_discount_empty_book_returns_zero():
+        <pre>def test_average_discount_empty():
     cb = CouponBook()
     assert cb.average_discount(100) == 0</pre>
       </div>
       
       <div class="test">
         <div class="tt">apply_best_coupon returns original total when no coupons are provided</div>
-        <div class="detail">Prevents crashes on empty input and defines expected behaviour.</div>
-        <pre>Scenario: apply_best_coupon with empty coupon list
-  Given a total amount of 200
-  And an empty list of coupons
-  When I apply_best_coupon
-  Then the returned total should equal the original amount
+        <div class="detail">Ensures function does not raise on empty input and behaves gracefully.</div>
+        <pre>Scenario: Apply best coupon with empty list
+  Given an empty list of coupons
+  When apply_best_coupon is called with a total of 200
+  Then the returned total should be 200
 </pre>
-        <pre>def test_apply_best_coupon_empty_list_returns_original_total():
+        <pre>def test_apply_best_coupon_empty():
     total = 200
     assert apply_best_coupon(total, []) == total</pre>
       </div>
       
       <div class="test">
         <div class="tt">add rejects invalid percent values</div>
-        <div class="detail">Validates input range to avoid negative or excessive discounts.</div>
-        <pre>Scenario: add method validates percent bounds
-  Given a CouponBook
-  When I try to add a coupon with percent -5
+        <div class="detail">Confirms input validation prevents negative or overly large discounts.</div>
+        <pre>Scenario: Add coupon with invalid percent
+  Given a CouponBook instance
+  When add is called with a percent of -5
   Then a ValueError should be raised
 </pre>
-        <pre>def test_add_invalid_percent_raises():
+        <pre>import pytest
+
+def test_add_invalid_percent():
     cb = CouponBook()
     with pytest.raises(ValueError):
-        cb.add('BAD', -5)</pre>
+        cb.add('BAD', -5)
+    with pytest.raises(ValueError):
+        cb.add('OVER', 150)</pre>
       </div>
       
     </div>

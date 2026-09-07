@@ -122,6 +122,16 @@ published, which is what the links point at:
 | [/report/](https://priya123z.github.io/ai-code-review/report/) | `sample-report/`, the whole demo module: 3 files, 16 findings |
 | [/report/pr-2/](https://priya123z.github.io/ai-code-review/report/pr-2/) | `pr-report/`, the diff-scoped review from #2: 1 file, 4 findings |
 
+Both published copies are snapshots of a particular run, not live output.
+`pr-report/` is from
+[run 34097350350](https://github.com/Priya123z/ai-code-review/actions/runs/34097350350).
+Re-running the scan over the same diff finds the same four things but does not
+always grade them the same way; that run called two of them critical where an
+earlier one called them medium and low. The model is not deterministic, so a
+snapshot and a fresh comment can disagree about severity even when they agree
+about the code. Worth knowing before wiring `--fail-on-gate` to a critical
+threshold.
+
 ## As an API
 
 `server/` is a FastAPI app exposing the same three capabilities over HTTP, for
