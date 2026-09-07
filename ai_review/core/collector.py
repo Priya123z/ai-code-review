@@ -1,12 +1,7 @@
 """Decide *what* to send to the model: whole tree, or only the changed files."""
-from __future__ import annotations
-
 import os
 import subprocess
 from dataclasses import dataclass
-from typing import List
-
-from .config import Config
 
 
 @dataclass
@@ -17,17 +12,17 @@ class SourceFile:
     language: str = "python"
 
 
-def _language_for(path: str) -> str:
+def _language_for(path):
     ext = os.path.splitext(path)[1].lstrip(".")
     return {"py": "python", "js": "javascript", "ts": "typescript", "java": "java"}.get(ext, ext or "text")
 
 
-def _excluded(rel: str, cfg: Config) -> bool:
+def _excluded(rel, cfg):
     norm = "/" + rel.replace(os.sep, "/")
     return any(pat in norm for pat in cfg.exclude_globs)
 
 
-def _changed_files(cfg: Config) -> List[str]:
+def _changed_files(cfg):
     """Files changed against the diff base, which is what PR mode reviews."""
     try:
         out = subprocess.run(
@@ -46,8 +41,8 @@ def _changed_files(cfg: Config) -> List[str]:
         return []
 
 
-def collect(cfg: Config) -> List[SourceFile]:
-    files: List[SourceFile] = []
+def collect(cfg):
+    files = []
 
     if cfg.diff_only:
         candidates = [os.path.join(cfg.target, n) for n in _changed_files(cfg)]

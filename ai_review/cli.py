@@ -3,18 +3,16 @@
     ai-review scan ./src --out report/
     ai-review scan . --diff --fail-on-gate
 """
-from __future__ import annotations
-
 import argparse
 import sys
 
 from .core.config import Config
 from .core.pipeline import run_and_write
 from .providers.chain import build_client
-from .providers.base import BaseClient
+from .report import schema
 
 
-def _build_parser() -> argparse.ArgumentParser:
+def _build_parser():
     p = argparse.ArgumentParser(prog="ai-review", description="Scan code with an LLM: find defects, suggest tests, render a report.")
     sub = p.add_subparsers(dest="command", required=True)
 
@@ -50,7 +48,7 @@ def _build_parser() -> argparse.ArgumentParser:
     return p
 
 
-def _cfg_from_args(a: argparse.Namespace) -> Config:
+def _cfg_from_args(a):
     cfg = Config(target=a.target, out_dir=a.out, diff_only=a.diff)
     if a.model:
         cfg.model = a.model
@@ -67,7 +65,7 @@ def _cfg_from_args(a: argparse.Namespace) -> Config:
     return cfg
 
 
-def main(argv=None) -> int:
+def main(argv=None):
     # A redirected stdout is block buffered, so in a CI log nothing appeared until the
     # process exited: the per-file progress arrived all at once at the end, and the
     # warnings below (stderr, which is not buffered) were timestamped ahead of the
@@ -91,50 +89,50 @@ def main(argv=None) -> int:
 
     cfg = _cfg_from_args(args)
     client = build_client(model=cfg.model)
-    if not client.configured:
-        print("error: no LLM provider is configured.", file=sys.stderr)
-        print("  export GROQ_API_KEY=gsk_...   (or OPENROUTER_API_KEY=sk-or-...)", file=sys.stderr)
+    if not _require_key(client):
         return 2
 
     print(f"ai-review · target={cfg.target}")
-    report, paths = run_and_write(cfg, client=client, progress=lambda m: print("  " + m))
+    report, paths = run_and_write(cfg, client=client, progress=lambda m: print("  " + m),
+                                  max_critical=cfg.max_critical, max_high=cfg.max_high)
 
     # Write the emitted tests before the summary rather than after it, so the
     # summary can report them and so every line the run prints to stdout is
     # contiguous. Printing them after meant a stdout line was still to come once
-    # the warnings below had started, and stdout and stderr are separate pipes 
+    # the warnings below had started, and stdout and stderr are separate pipes;
     # a CI log interleaves them by read order, not by write order.
     emitted = None
     if args.emit_tests:
         from .report.emit import emit_tests
         emitted = emit_tests(report, args.emit_tests)
 
-    b = report.severity_breakdown
+    b = report["severity_breakdown"]
     print("\n── summary ─────────────────────────────")
     print(f"  provider   : {client.served_by} · {client.model}")
-    print(f"  risk score : {report.risk_score}")
-    print(f"  findings   : {len(report.all_findings)}, "
+    print(f"  risk score : {report['risk_score']}")
+    print(f"  findings   : {len(schema.all_findings(report))}, "
           f"(critical {b['critical']}, high {b['high']}, medium {b['medium']}, low {b['low']})")
-    print(f"  tests      : {len(report.all_tests)} suggested")
+    print(f"  tests      : {len(schema.all_tests(report))} suggested")
     print(f"  report     : {paths['html']}")
     print(f"  json       : {paths['json']}")
     if emitted is not None:
         print(f"  emitted    : {emitted['features']} .feature + "
               f"{emitted['pytest_modules']} pytest file(s) in {args.emit_tests}/")
 
-    if report.incomplete:
-        print(f"\n! {len(report.failed_files)} of {len(report.files)} file(s) could not be "
+    if report["incomplete"]:
+        failed = schema.failed_files(report)
+        print(f"\n! {len(failed)} of {len(report['files'])} file(s) could not be "
               f"reviewed:", file=sys.stderr)
-        for fr in report.failed_files[:5]:
-            print(f"    {fr.path}: {fr.error}", file=sys.stderr)
+        for fr in failed[:5]:
+            print(f"    {fr['path']}: {fr['error']}", file=sys.stderr)
 
     # Nothing was reviewed, so there is nothing to say about the code. Exiting 0 here
     # would let a provider outage look like a passing gate.
-    if report.files and report.reviewed_count == 0:
+    if report["files"] and report["reviewed_count"] == 0:
         print("\n✕ no files could be reviewed, so not reporting a result.", file=sys.stderr)
         return 2
 
-    gate_failed = report.gate_fails(cfg.max_critical, cfg.max_high)
+    gate_failed = schema.gate_fails(report, cfg.max_critical, cfg.max_high)
     if gate_failed:
         print(f"\n✕ quality gate FAILED (critical>{cfg.max_critical} or high>{cfg.max_high})",
               file=sys.stderr)
@@ -146,7 +144,7 @@ def main(argv=None) -> int:
     return 0
 
 
-def _require_key(client: BaseClient) -> bool:
+def _require_key(client):
     if not client.configured:
         print("error: no LLM provider is configured.", file=sys.stderr)
         print("  export GROQ_API_KEY=gsk_...   (or OPENROUTER_API_KEY=sk-or-...)", file=sys.stderr)
@@ -154,7 +152,7 @@ def _require_key(client: BaseClient) -> bool:
     return True
 
 
-def _cmd_gen_tests(args) -> int:
+def _cmd_gen_tests(args):
     from .core.config import Config
     from .core.pipeline import run
     from .report.emit import emit_tests
@@ -173,7 +171,7 @@ def _cmd_gen_tests(args) -> int:
     return 0
 
 
-def _cmd_heal(args) -> int:
+def _cmd_heal(args):
     import json as _json
 
     from .analyzers.selfheal import heal_locator
@@ -189,8 +187,8 @@ def _cmd_heal(args) -> int:
         return 2
     print(f"ai-review heal · model={client.model}")
     result = heal_locator(client, args.selector, html, args.desc)
-    print(_json.dumps(result.model_dump(), indent=2))
-    return 0 if result.found else 1
+    print(_json.dumps(result, indent=2))
+    return 0 if result["found"] else 1
 
 
 if __name__ == "__main__":

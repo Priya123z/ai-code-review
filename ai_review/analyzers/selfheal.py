@@ -7,13 +7,6 @@ a resilient, Playwright-ready locator (preferring role/text/test-id over brittle
 CSS paths). It's the "self-healing test" idea from my resume, scoped to one
 honest, verifiable step, and the engineer still reviews the suggestion.
 """
-from __future__ import annotations
-
-
-from pydantic import BaseModel, Field
-
-from ..providers.base import BaseClient
-
 PROMPT_VERSION = "selfheal-v1"
 
 SYSTEM = """You are a Playwright test-automation expert. A selector has stopped
@@ -37,18 +30,22 @@ Return ONLY JSON:
   "confidence": 0.0, "reasoning": "one sentence"}}"""
 
 
-class HealResult(BaseModel):
-    found: bool = False
-    strategy: str = "css"
-    locator: str = ""
-    playwright: str = ""
-    confidence: float = Field(default=0.0, ge=0.0, le=1.0)
-    reasoning: str = ""
+def _result(found=False, strategy="css", locator="", playwright="", confidence=0.0, reasoning=""):
+    try:
+        confidence = min(1.0, max(0.0, float(confidence)))
+    except (TypeError, ValueError):
+        confidence = 0.0
+    return {
+        "found": bool(found),
+        "strategy": str(strategy or "css"),
+        "locator": str(locator or ""),
+        "playwright": str(playwright or ""),
+        "confidence": confidence,
+        "reasoning": str(reasoning or ""),
+    }
 
 
-def heal_locator(
-    client: BaseClient, selector: str, html: str, description: str = ""
-) -> HealResult:
+def heal_locator(client, selector, html, description=""):
     data = client.chat_json(
         SYSTEM,
         USER_TEMPLATE.format(
@@ -56,6 +53,6 @@ def heal_locator(
         ),
     )
     try:
-        return HealResult(**{k: data.get(k) for k in HealResult.model_fields if k in data})
+        return _result(**{k: v for k, v in data.items() if k in _result()})
     except Exception:
-        return HealResult(found=False, reasoning="Model returned an unparseable suggestion.")
+        return _result(reasoning="Model returned an unparseable suggestion.")

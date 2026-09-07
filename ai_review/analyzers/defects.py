@@ -1,24 +1,10 @@
 """Defect / risk analyzer.
 
-Versioned prompts live here as module constants, so changing review strategy is a
-one-file diff, not a hunt through scattered f-strings. Every LLM response is
-validated into Pydantic ``Finding`` / ``SuggestedTest`` objects before it can
-reach a report.
+Versioned prompts live here as module constants, so changing review strategy is
+a one-file diff rather than a hunt through scattered f-strings. Everything the
+model returns goes through the builders in report/schema.py, which normalise it.
 """
-from __future__ import annotations
-
-from typing import List
-
-from ..core.collector import SourceFile
-from ..providers.base import BaseClient
-from ..report.schema import (
-    Category,
-    FileReport,
-    Finding,
-    GherkinScenario,
-    Severity,
-    SuggestedTest,
-)
+from ..report import schema
 
 PROMPT_VERSION = "defects-v1"
 
@@ -52,52 +38,50 @@ FILE CONTENT:
 ```"""
 
 
-def _coerce_findings(raw: list, path: str) -> List[Finding]:
-    out: List[Finding] = []
+def _findings_from(raw, path):
+    out = []
     for item in raw or []:
+        # A finding with neither a title nor a detail says nothing, and models do
+        # occasionally emit one. Dropping it here keeps the rest of the file.
+        if not isinstance(item, dict) or not (item.get("title") or item.get("detail")):
+            continue
         try:
-            sev = str(item.get("severity", "medium")).lower()
-            cat = str(item.get("category", "bug")).lower()
-            out.append(
-                Finding(
-                    title=item.get("title", "Untitled finding"),
-                    severity=Severity(sev) if sev in Severity._value2member_map_ else Severity.medium,
-                    category=Category(cat) if cat in Category._value2member_map_ else Category.bug,
-                    file=item.get("file", path),
-                    line=item.get("line"),
-                    detail=item.get("detail", ""),
-                    recommendation=item.get("recommendation", ""),
-                    confidence=float(item.get("confidence", 0.7) or 0.7),
-                )
-            )
+            out.append(schema.finding(
+                title=item.get("title", "Untitled finding"),
+                severity=item.get("severity", "medium"),
+                category=item.get("category", "bug"),
+                file=item.get("file", path),
+                line=item.get("line"),
+                detail=item.get("detail", ""),
+                recommendation=item.get("recommendation", ""),
+                confidence=item.get("confidence", 0.7),
+            ))
         except Exception:
             continue  # a single malformed finding never sinks the whole file
     return out
 
 
-def _coerce_tests(raw: list, path: str) -> List[SuggestedTest]:
-    out: List[SuggestedTest] = []
+def _tests_from(raw, path):
+    out = []
     for item in raw or []:
+        if not isinstance(item, dict):
+            continue
         try:
-            sc = item.get("scenario") or None
-            scenario = None
-            if isinstance(sc, dict) and sc.get("name"):
-                scenario = GherkinScenario(name=sc["name"], steps=list(sc.get("steps", [])))
-            out.append(
-                SuggestedTest(
-                    title=item.get("title", "Suggested test"),
-                    rationale=item.get("rationale", ""),
-                    target_file=path,
-                    scenario=scenario,
-                    pytest_skeleton=item.get("pytest_skeleton", ""),
-                )
-            )
+            sc = item.get("scenario")
+            out.append(schema.suggested_test(
+                title=item.get("title", "Suggested test"),
+                rationale=item.get("rationale", ""),
+                target_file=path,
+                scenario=(schema.scenario(sc["name"], sc.get("steps"))
+                          if isinstance(sc, dict) and sc.get("name") else None),
+                pytest_skeleton=item.get("pytest_skeleton", ""),
+            ))
         except Exception:
             continue
     return out
 
 
-def analyze_file(client: BaseClient, src: SourceFile, repo_context: str = "") -> FileReport:
+def analyze_file(client, src, repo_context=""):
     context_block = ""
     if repo_context.strip():
         context_block = (
@@ -110,12 +94,10 @@ def analyze_file(client: BaseClient, src: SourceFile, repo_context: str = "") ->
         language=src.language, path=src.path, content=src.content, context_block=context_block
     )
     data = client.chat_json(SYSTEM, user)
-    findings = _coerce_findings(data.get("findings", []), src.path)
-    tests = _coerce_tests(data.get("suggested_tests", []), src.path)
-    return FileReport(
+    return schema.file_report(
         path=src.path,
         language=src.language,
-        findings=findings,
-        suggested_tests=tests,
-        summary=str(data.get("summary", "")).strip(),
+        findings=_findings_from(data.get("findings", []), src.path),
+        suggested_tests=_tests_from(data.get("suggested_tests", []), src.path),
+        summary=data.get("summary", ""),
     )

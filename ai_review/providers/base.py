@@ -3,8 +3,6 @@
 Everything above this layer talks to `chat` / `chat_json` and never touches HTTP,
 which is what lets the whole suite run with no API key.
 """
-from __future__ import annotations
-
 import json
 import re
 
@@ -26,20 +24,20 @@ class BaseClient:
     served_by = None
 
     @property
-    def configured(self) -> bool:
+    def configured(self):
         raise NotImplementedError
 
-    def chat(self, system: str, user: str, as_json: bool = False) -> str:
+    def chat(self, system, user, as_json=False):
         raise NotImplementedError
 
-    def chat_json(self, system: str, user: str) -> dict:
+    def chat_json(self, system, user):
         return extract_json(self.chat(system, user, as_json=True))
 
 
 _FENCE = re.compile(r"```(?:json)?\s*(.*?)```", re.DOTALL)
 
 
-def extract_json(text: str) -> dict:
+def extract_json(text):
     """Best-effort JSON extraction, handling fenced blocks and leading prose."""
     text = text.strip()
     try:

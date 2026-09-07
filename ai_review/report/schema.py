@@ -1,142 +1,128 @@
-"""Pydantic contracts for everything the pipeline produces.
+"""What a report is made of, and the numbers a CI gate reads off one.
 
-The whole point of validating LLM output through Pydantic: an LLM that
-returns malformed or half-invented JSON fails loudly at the boundary, instead
-of silently poisoning a report a human later trusts.
+Reports are plain dicts. What the pipeline builds, what lands in report.json and
+what the template renders are all the same shape, so there is nothing to keep in
+sync and nothing to serialise. The builders below normalise as they go, because
+a model that returns "severity": "Critical!" or a confidence of 5 should produce
+a usable finding rather than an exception three layers up.
 """
-from __future__ import annotations
-
+import json
 from datetime import datetime, timezone
-from enum import Enum
-from typing import List, Optional
 
-from pydantic import BaseModel, Field, computed_field, field_validator
+# Order matters: the report's severity bar and legend are drawn in this order.
+SEVERITIES = ["critical", "high", "medium", "low", "info"]
 
+# What a finding of each severity adds to the risk score. Deliberately steep:
+# one critical outweighs any number of lows, because that is how a gate should
+# behave.
+SEVERITY_WEIGHT = {"critical": 100, "high": 40, "medium": 10, "low": 3, "info": 1}
 
-class Severity(str, Enum):
-    critical = "critical"
-    high = "high"
-    medium = "medium"
-    low = "low"
-    info = "info"
-
-    @property
-    def weight(self) -> int:
-        return {"critical": 100, "high": 40, "medium": 10, "low": 3, "info": 1}[self.value]
+CATEGORIES = ["bug", "security", "performance", "reliability", "maintainability", "test_gap"]
 
 
-class Category(str, Enum):
-    bug = "bug"
-    security = "security"
-    performance = "performance"
-    reliability = "reliability"
-    maintainability = "maintainability"
-    test_gap = "test_gap"
+def finding(title, severity, category, file, line=None, detail="",
+            recommendation="", confidence=0.7):
+    severity = str(severity or "").strip().lower()
+    category = str(category or "").strip().lower()
+    try:
+        line = int(line)
+        line = line if line >= 1 else None
+    except (TypeError, ValueError):
+        line = None
+    try:
+        confidence = min(1.0, max(0.0, float(confidence)))
+    except (TypeError, ValueError):
+        confidence = 0.7
+    return {
+        "title": str(title).strip()[:160] or "Untitled finding",
+        "severity": severity if severity in SEVERITY_WEIGHT else "medium",
+        "category": category if category in CATEGORIES else "bug",
+        "file": file,
+        "line": line,
+        "detail": str(detail).strip(),
+        "recommendation": str(recommendation).strip(),
+        "confidence": confidence,
+    }
 
 
-class Finding(BaseModel):
-    """A single defect / risk the analyzer surfaced."""
-
-    title: str = Field(..., min_length=3, max_length=160)
-    severity: Severity
-    category: Category
-    file: str
-    line: Optional[int] = Field(default=None, ge=1)
-    detail: str = Field(..., min_length=1)
-    recommendation: str = Field(default="", description="How to fix it.")
-    confidence: float = Field(default=0.7, ge=0.0, le=1.0)
-
-    @field_validator("title", "detail", "recommendation", mode="before")
-    @classmethod
-    def _strip(cls, v):
-        return v.strip() if isinstance(v, str) else v
+def scenario(name, steps):
+    return {"name": str(name).strip(), "steps": [str(s) for s in steps or []]}
 
 
-class GherkinScenario(BaseModel):
-    name: str
-    steps: List[str] = Field(default_factory=list)
-
-    def to_feature(self) -> str:
-        body = "\n".join(f"    {s}" for s in self.steps)
-        return f"  Scenario: {self.name}\n{body}"
+def scenario_to_feature(sc):
+    body = "\n".join(f"    {s}" for s in sc["steps"])
+    return f"  Scenario: {sc['name']}\n{body}"
 
 
-class SuggestedTest(BaseModel):
-    """A test the LLM proposes to close a coverage gap."""
-
-    title: str
-    rationale: str = ""
-    target_file: str = ""
-    scenario: Optional[GherkinScenario] = None
-    pytest_skeleton: str = ""
-
-
-class FileReport(BaseModel):
-    path: str
-    language: str = "python"
-    findings: List[Finding] = Field(default_factory=list)
-    suggested_tests: List[SuggestedTest] = Field(default_factory=list)
-    summary: str = ""
-    # Set when the file could not be reviewed at all. Without this a provider outage
-    # looked identical to a clean file: no findings, gate passes.
-    error: str = ""
+def suggested_test(title, rationale="", target_file="", scenario=None, pytest_skeleton=""):
+    return {
+        "title": str(title).strip() or "Suggested test",
+        "rationale": str(rationale).strip(),
+        "target_file": target_file,
+        "scenario": scenario,
+        "pytest_skeleton": pytest_skeleton or "",
+    }
 
 
-class Report(BaseModel):
-    """The top-level artifact, serialized to JSON and rendered to HTML."""
+def file_report(path, language="python", findings=None, suggested_tests=None,
+                summary="", error=""):
+    return {
+        "path": path,
+        "language": language,
+        "findings": findings or [],
+        "suggested_tests": suggested_tests or [],
+        "summary": str(summary).strip(),
+        # Set when the file could not be reviewed at all. Without it a provider
+        # outage looked identical to a clean file: no findings, gate passes.
+        "error": error,
+    }
 
-    project: str = "unknown"
-    model: str = "unknown"
-    generated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
-    commit: str = ""
-    files: List[FileReport] = Field(default_factory=list)
-    notes: str = ""
 
-    # ---- derived helpers used by the renderer & the CI gate ----
-    @property
-    def all_findings(self) -> List[Finding]:
-        return [f for fr in self.files for f in fr.findings]
+def report(project="unknown", model="unknown", commit="", files=None, notes=""):
+    """Assemble the top-level artifact, derived numbers included.
 
-    @property
-    def all_tests(self) -> List[SuggestedTest]:
-        return [t for fr in self.files for t in fr.suggested_tests]
+    The five derived values are written into the dict rather than computed on
+    read, so report.json carries them and CI can threshold on the file without
+    importing this package.
+    """
+    files = files or []
+    findings = all_findings({"files": files})
+    failed = [f for f in files if f["error"]]
+    return {
+        "project": project,
+        "model": model,
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "commit": commit,
+        "files": files,
+        "notes": notes,
+        "risk_score": sum(SEVERITY_WEIGHT[f["severity"]] for f in findings),
+        "severity_breakdown": {s: sum(1 for f in findings if f["severity"] == s)
+                               for s in SEVERITIES},
+        "reviewed_count": len(files) - len(failed),
+        "failed_count": len(failed),
+        "incomplete": bool(failed),
+    }
 
-    def count(self, severity: Severity) -> int:
-        return sum(1 for f in self.all_findings if f.severity == severity)
 
-    @computed_field
-    @property
-    def risk_score(self) -> int:
-        """Weighted score: the single number a pipeline gate can threshold on."""
-        return sum(f.severity.weight for f in self.all_findings)
+def all_findings(rep):
+    return [f for fr in rep["files"] for f in fr["findings"]]
 
-    @computed_field
-    @property
-    def severity_breakdown(self) -> dict:
-        return {s.value: self.count(s) for s in Severity}
 
-    @property
-    def failed_files(self) -> List[FileReport]:
-        return [fr for fr in self.files if fr.error]
+def all_tests(rep):
+    return [t for fr in rep["files"] for t in fr["suggested_tests"]]
 
-    @computed_field
-    @property
-    def reviewed_count(self) -> int:
-        return len(self.files) - len(self.failed_files)
 
-    @computed_field
-    @property
-    def failed_count(self) -> int:
-        return len(self.failed_files)
+def failed_files(rep):
+    return [fr for fr in rep["files"] if fr["error"]]
 
-    @computed_field
-    @property
-    def incomplete(self) -> bool:
-        """True when at least one file could not be reviewed."""
-        return bool(self.failed_files)
 
-    def gate_fails(self, max_critical: int = 0, max_high: int = 3) -> bool:
-        # An incomplete run cannot claim the code is clean.
-        if self.files and self.reviewed_count == 0:
-            return True
-        return self.count(Severity.critical) > max_critical or self.count(Severity.high) > max_high
+def gate_fails(rep, max_critical=0, max_high=3):
+    # An incomplete run cannot claim the code is clean.
+    if rep["files"] and rep["reviewed_count"] == 0:
+        return True
+    b = rep["severity_breakdown"]
+    return b["critical"] > max_critical or b["high"] > max_high
+
+
+def to_json(rep):
+    return json.dumps(rep, indent=2)

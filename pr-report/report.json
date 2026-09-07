@@ -14,7 +14,7 @@
           "category": "maintainability",
           "file": "examples/flask_shop/coupons.py",
           "line": 9,
-          "detail": "Using a mutable default (codes=[]) causes all CouponBook instances to share the same list, leading to unexpected cross‑instance state.",
+          "detail": "Using a mutable default (codes=[]) causes all CouponBook instances to share the same list, leading to unexpected cross\u2011instance state.",
           "recommendation": "Change the signature to def __init__(self, codes=None): and inside set self.codes = [] if codes is None else list(codes).",
           "confidence": 0.99
         },
@@ -45,7 +45,7 @@
           "file": "examples/flask_shop/coupons.py",
           "line": 12,
           "detail": "Negative or >100 percent values can produce negative totals or discounts greater than the purchase amount, which may be exploited.",
-          "recommendation": "Validate that 0 <= percent <= 100 and raise ValueError for out‑of‑range inputs.",
+          "recommendation": "Validate that 0 <= percent <= 100 and raise ValueError for out\u2011of\u2011range inputs.",
           "confidence": 0.9
         }
       ],

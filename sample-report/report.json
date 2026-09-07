@@ -19,7 +19,7 @@
           "confidence": 0.95
         },
         {
-          "title": "Floating‑point arithmetic for monetary values",
+          "title": "Floating\u2011point arithmetic for monetary values",
           "severity": "medium",
           "category": "maintainability",
           "file": "payments.py",
@@ -35,7 +35,7 @@
           "file": "payments.py",
           "line": 14,
           "detail": "Catching all exceptions and always returning a success status hides real refund failures, misleading callers.",
-          "recommendation": "Catch specific exceptions, log the error, and propagate a failure response or re‑raise.",
+          "recommendation": "Catch specific exceptions, log the error, and propagate a failure response or re\u2011raise.",
           "confidence": 0.96
         },
         {
@@ -91,7 +91,7 @@
         },
         {
           "title": "Process order is idempotent",
-          "rationale": "Ensures that retrying the same order does not double‑charge the customer.",
+          "rationale": "Ensures that retrying the same order does not double\u2011charge the customer.",
           "target_file": "payments.py",
           "scenario": {
             "name": "Idempotent order processing",
@@ -135,7 +135,7 @@
           "category": "maintainability",
           "file": "cart.py",
           "line": 5,
-          "detail": "Using a list as a default value causes all Cart instances to share the same list, leading to unexpected cross‑instance state leakage.",
+          "detail": "Using a list as a default value causes all Cart instances to share the same list, leading to unexpected cross\u2011instance state leakage.",
           "recommendation": "Change the signature to def __init__(self, items=None): and inside set self.items = list(items) if items is not None else []",
           "confidence": 0.99
         },
@@ -165,7 +165,7 @@
           "category": "reliability",
           "file": "cart.py",
           "line": 18,
-          "detail": "The check‑then‑act pattern (checking available stock then decrementing) is not atomic; concurrent calls can oversell inventory.",
+          "detail": "The check\u2011then\u2011act pattern (checking available stock then decrementing) is not atomic; concurrent calls can oversell inventory.",
           "recommendation": "Guard the operation with a lock (e.g., threading.Lock) or use an atomic transaction provided by the storage layer.",
           "confidence": 0.94
         },
@@ -225,7 +225,7 @@
           "pytest_skeleton": "def test_average_price_empty_cart_returns_zero():\n    cart = Cart()\n    assert cart.average_price() == 0"
         },
         {
-          "title": "reserve_stock should be thread‑safe",
+          "title": "reserve_stock should be thread\u2011safe",
           "rationale": "Detects the race condition where concurrent reservations could oversell inventory.",
           "target_file": "cart.py",
           "scenario": {
@@ -264,7 +264,7 @@
       "language": "python",
       "findings": [
         {
-          "title": "Hard‑coded secret key in source code",
+          "title": "Hard\u2011coded secret key in source code",
           "severity": "high",
           "category": "security",
           "file": "auth.py",
@@ -289,8 +289,8 @@
           "category": "security",
           "file": "auth.py",
           "line": 24,
-          "detail": "Passwords are compared as plain strings, implying they are stored in clear text and the comparison is not constant‑time, making brute‑force attacks easier.",
-          "recommendation": "Store passwords hashed with a strong algorithm (bcrypt, Argon2) and use a constant‑time comparison function for verification.",
+          "detail": "Passwords are compared as plain strings, implying they are stored in clear text and the comparison is not constant\u2011time, making brute\u2011force attacks easier.",
+          "recommendation": "Store passwords hashed with a strong algorithm (bcrypt, Argon2) and use a constant\u2011time comparison function for verification.",
           "confidence": 1.0
         },
         {
@@ -299,7 +299,7 @@
           "category": "security",
           "file": "auth.py",
           "line": 26,
-          "detail": "Token is constructed as \"user_id‑SECRET_KEY\", which is deterministic and reveals the secret; there is also no expiration or signature verification.",
+          "detail": "Token is constructed as \"user_id\u2011SECRET_KEY\", which is deterministic and reveals the secret; there is also no expiration or signature verification.",
           "recommendation": "Generate cryptographically random tokens (e.g., JWTs with signatures and expiry) and never embed the secret key in the token value.",
           "confidence": 0.9
         },
@@ -314,13 +314,13 @@
           "confidence": 0.9
         },
         {
-          "title": "Global mutable session store is not thread‑safe",
+          "title": "Global mutable session store is not thread\u2011safe",
           "severity": "low",
           "category": "maintainability",
           "file": "auth.py",
           "line": 11,
-          "detail": "SESSIONS is a plain dict accessed without synchronization, which can cause race conditions in multi‑threaded environments.",
-          "recommendation": "Replace with a thread‑safe store (e.g., collections.defaultdict with locks) or external session backend.",
+          "detail": "SESSIONS is a plain dict accessed without synchronization, which can cause race conditions in multi\u2011threaded environments.",
+          "recommendation": "Replace with a thread\u2011safe store (e.g., collections.defaultdict with locks) or external session backend.",
           "confidence": 0.7
         }
       ],
@@ -330,7 +330,7 @@
           "rationale": "Ensures that malicious input cannot bypass authentication via crafted usernames.",
           "target_file": "auth.py",
           "scenario": {
-            "name": "Login fails with SQL‑injection payload",
+            "name": "Login fails with SQL\u2011injection payload",
             "steps": [
               "Given a user \"alice\" with password \"wonderland\" exists in the database",
               "When the login function is called with username \"alice' OR '1'='1\" and any password",
@@ -355,7 +355,7 @@
         },
         {
           "title": "Passwords must be stored hashed and verified securely",
-          "rationale": "Ensures that password handling follows best‑practice security (hashing, constant‑time compare).",
+          "rationale": "Ensures that password handling follows best\u2011practice security (hashing, constant\u2011time compare).",
           "target_file": "auth.py",
           "scenario": {
             "name": "Login succeeds with correct password and fails with wrong password when passwords are hashed",
@@ -370,9 +370,20 @@
           "pytest_skeleton": ""
         }
       ],
-      "summary": "The file contains several critical security flaws (hard‑coded secret, SQL injection, plaintext password handling, predictable tokens) and some reliability concerns (unclosed DB connections, non‑thread‑safe session store).",
+      "summary": "The file contains several critical security flaws (hard\u2011coded secret, SQL injection, plaintext password handling, predictable tokens) and some reliability concerns (unclosed DB connections, non\u2011thread\u2011safe session store).",
       "error": ""
     }
   ],
-  "notes": "Prompt defects-v1. 3 file(s) analyzed."
+  "notes": "Prompt defects-v1. 3 file(s) analyzed.",
+  "risk_score": 483,
+  "severity_breakdown": {
+    "critical": 1,
+    "high": 8,
+    "medium": 6,
+    "low": 1,
+    "info": 0
+  },
+  "reviewed_count": 3,
+  "failed_count": 0,
+  "incomplete": false
 }

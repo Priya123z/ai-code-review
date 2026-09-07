@@ -1,27 +1,15 @@
 """OpenRouter chat client, used as the fallback behind Groq.
 
-The free tier here is thin  50 requests a day on an unfunded account, 20 a
-minute  so this is not the first choice for anything public. Paid model slugs
+The free tier here is thin: 50 requests a day on an unfunded account, 20 a
+minute, so this is not the first choice for anything public. Paid model slugs
 are avoided by default because a zero-balance account starts returning 402.
 """
-from __future__ import annotations
-
 import os
 import time
-from dataclasses import dataclass, field
-from typing import Optional
 
 import requests
 
-# extract_json is imported but not called here: it is re-exported so that
-# `from ai_review.providers.openrouter import extract_json` keeps working for
-# callers and tests that predate the split into providers/base.py.
-from ai_review.providers.base import (  # noqa: F401
-    BaseClient,
-    LLMError,
-    QuotaExhausted,
-    extract_json,
-)
+from ai_review.providers.base import BaseClient, LLMError, QuotaExhausted
 
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
@@ -31,29 +19,24 @@ DEFAULT_MODEL = "nvidia/nemotron-3-super-120b-a12b:free"
 FALLBACK_MODELS = ["cohere/north-mini-code:free", "google/gemma-4-31b-it:free"]
 
 
-@dataclass
 class LLMClient(BaseClient):
-    api_key: Optional[str] = None
-    model: str = DEFAULT_MODEL
-    temperature: float = 0.1
-    max_tokens: int = 3000
-    timeout: int = 90
-    max_retries: int = 2
+    name = "openrouter"
 
-    name: str = field(default="openrouter", init=False)
-
-    def __post_init__(self) -> None:
-        self.api_key = self.api_key or os.getenv("OPENROUTER_API_KEY")
-        # An explicit model argument wins. This used to be the other way round, so
-        # exporting AI_REVIEW_MODEL silently overrode --model on the command line.
-        if self.model == DEFAULT_MODEL:
-            self.model = os.getenv("AI_REVIEW_MODEL", self.model)
+    def __init__(self, api_key=None, model=DEFAULT_MODEL):
+        self.api_key = api_key or os.getenv("OPENROUTER_API_KEY")
+        # An explicit model argument wins. This used to be the other way round,
+        # so exporting AI_REVIEW_MODEL silently overrode --model.
+        self.model = os.getenv("AI_REVIEW_MODEL", model) if model == DEFAULT_MODEL else model
+        self.temperature = 0.1
+        self.max_tokens = 3000
+        self.timeout = 90
+        self.max_retries = 2
 
     @property
-    def configured(self) -> bool:
+    def configured(self):
         return bool(self.api_key)
 
-    def chat(self, system: str, user: str, as_json: bool = False) -> str:
+    def chat(self, system, user, as_json=False):
         if not self.configured:
             raise LLMError(
                 "OPENROUTER_API_KEY is not set. Export it locally or add it as a "
@@ -61,7 +44,7 @@ class LLMClient(BaseClient):
             )
 
         models = [self.model] + [m for m in FALLBACK_MODELS if m != self.model]
-        last_err: Optional[Exception] = None
+        last_err = None
 
         for model in models:
             for attempt in range(1, self.max_retries + 1):
@@ -76,7 +59,7 @@ class LLMClient(BaseClient):
 
         raise QuotaExhausted(f"OpenRouter failed for every model: {last_err}")
 
-    def _post(self, model: str, system: str, user: str, as_json: bool = False) -> str:
+    def _post(self, model, system, user, as_json=False):
         payload = {
             "model": model,
             "temperature": self.temperature,

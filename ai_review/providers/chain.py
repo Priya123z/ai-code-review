@@ -6,35 +6,31 @@ built. A single provider is not enough to keep a public demo working, so the
 chain falls through Groq to OpenRouter and reports which one actually served the
 request.
 """
-from __future__ import annotations
-
-from typing import List, Optional
-
 from ai_review.providers.base import BaseClient, LLMError, QuotaExhausted
 from ai_review.providers.groq import GroqClient
 from ai_review.providers.openrouter import LLMClient
 
 
 class FallbackClient(BaseClient):
-    def __init__(self, clients: List[BaseClient]):
+    def __init__(self, clients):
         self.clients = [c for c in clients if c.configured]
-        self.served_by: Optional[str] = None
-        self._served: Optional[BaseClient] = None
+        self.served_by = None
+        self._served = None
 
     @property
-    def configured(self) -> bool:
+    def configured(self):
         return bool(self.clients)
 
     @property
-    def model(self) -> str:
+    def model(self):
         # The provider that answered, not the one we tried first.
         client = self._served or (self.clients[0] if self.clients else None)
         return client.model if client else ""
 
-    def chat(self, system: str, user: str, as_json: bool = False) -> str:
+    def chat(self, system, user, as_json=False):
         return self._through(lambda c: c.chat(system, user, as_json=as_json))
 
-    def chat_json(self, system: str, user: str) -> dict:
+    def chat_json(self, system, user):
         return self._through(lambda c: c.chat_json(system, user))
 
     def _through(self, call):
@@ -58,11 +54,10 @@ class FallbackClient(BaseClient):
         raise QuotaExhausted("every provider failed. " + "; ".join(errors))
 
 
-def build_client(api_key: Optional[str] = None, model: Optional[str] = None) -> FallbackClient:
+def build_client(api_key=None, model=None):
     """Groq first, OpenRouter behind it.
 
-    A caller-supplied key is treated as a Groq key, which is what the hosted demo
-    passes through when a visitor brings their own.
+    A caller-supplied key is treated as a Groq key.
     """
     if api_key:
         groq = GroqClient(api_key=api_key)

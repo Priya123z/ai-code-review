@@ -4,16 +4,12 @@ Preferred over OpenRouter for the hosted demo: the free tier allows 1000 request
 a day against OpenRouter's 50, it supports a real JSON mode so responses do not
 have to be scraped out of prose, and it answers in well under a second.
 
-Free tier limits, which the server's throttle is built around:
+Free tier limits, for anyone budgeting against them:
     30 requests/min, 1000 requests/day, 8000 tokens/min, 200k tokens/day
 Tokens per minute is what actually binds, not request count.
 """
-from __future__ import annotations
-
 import os
 import time
-from dataclasses import dataclass, field
-from typing import Optional
 
 import requests
 
@@ -27,36 +23,30 @@ DEFAULT_MODEL = "openai/gpt-oss-120b"
 FALLBACK_MODELS = ["openai/gpt-oss-20b", "qwen/qwen3.8-27b"]
 
 
-@dataclass
 class GroqClient(BaseClient):
-    api_key: Optional[str] = None
-    model: str = DEFAULT_MODEL
-    temperature: float = 0.1
-    max_tokens: int = 2000
-    timeout: int = 90
-    max_retries: int = 2
+    name = "groq"
 
-    name: str = field(default="groq", init=False)
-    remaining_tokens: Optional[int] = field(default=None, init=False)
-    remaining_requests: Optional[int] = field(default=None, init=False)
-
-    def __post_init__(self) -> None:
-        self.api_key = self.api_key or os.getenv("GROQ_API_KEY")
-        self.model = os.getenv("GROQ_MODEL") or self.model
+    def __init__(self, api_key=None, model=DEFAULT_MODEL):
+        self.api_key = api_key or os.getenv("GROQ_API_KEY")
+        self.model = os.getenv("GROQ_MODEL") or model
+        self.temperature = 0.1
+        self.max_tokens = 2000
+        self.timeout = 90
+        self.max_retries = 2
 
     @property
-    def configured(self) -> bool:
+    def configured(self):
         return bool(self.api_key)
 
     # Groq honours response_format, so with as_json there is nothing to scrape.
     # BaseClient.chat_json still runs extract_json over the result, as a cheap
     # guard for the day a model ignores it.
-    def chat(self, system: str, user: str, as_json: bool = False) -> str:
+    def chat(self, system, user, as_json=False):
         if not self.configured:
             raise LLMError("GROQ_API_KEY is not set.")
 
         models = [self.model] + [m for m in FALLBACK_MODELS if m != self.model]
-        last_err: Optional[Exception] = None
+        last_err = None
 
         for model in models:
             for attempt in range(1, self.max_retries + 1):
@@ -73,7 +63,7 @@ class GroqClient(BaseClient):
 
         raise QuotaExhausted(f"Groq failed for every model: {last_err}")
 
-    def _post(self, model: str, system: str, user: str, as_json: bool) -> str:
+    def _post(self, model, system, user, as_json):
         payload = {
             "model": model,
             "temperature": self.temperature,
@@ -96,8 +86,6 @@ class GroqClient(BaseClient):
             timeout=self.timeout,
         )
 
-        self._record_limits(resp)
-
         if resp.status_code == 429:
             raise QuotaExhausted(f"Groq rate limited on {model}")
 
@@ -116,16 +104,3 @@ class GroqClient(BaseClient):
 
         self.model = model
         return content
-
-    def _record_limits(self, resp) -> None:
-        # Surfaced on /api/quota so the page can show how many runs are left.
-        for header, attribute in [
-            ("x-ratelimit-remaining-tokens", "remaining_tokens"),
-            ("x-ratelimit-remaining-requests", "remaining_requests"),
-        ]:
-            value = resp.headers.get(header)
-            if value is not None:
-                try:
-                    setattr(self, attribute, int(value))
-                except ValueError:
-                    pass

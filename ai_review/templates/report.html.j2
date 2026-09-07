@@ -76,7 +76,7 @@
     </div>
   </div>
 
-  {% set fails = r.gate_fails() %}
+  {% set fails = gate_failed %}
   <div style="margin-bottom:18px">
     <span class="gate {{ 'fail' if fails else 'pass' }}">
       {{ '✕ QUALITY GATE FAILED' if fails else '✓ QUALITY GATE PASSED' }}
@@ -87,7 +87,7 @@
     <div class="card"><div class="n">{{ r.risk_score }}</div><div class="l">Risk score</div></div>
     <div class="card"><div class="n">{{ total_findings }}</div><div class="l">Findings</div></div>
     <div class="card"><div class="n">{{ total_tests }}</div><div class="l">Suggested tests</div></div>
-    <div class="card"><div class="n">{{ r.files|length }}</div><div class="l">Files reviewed</div></div>
+    <div class="card"><div class="n">{{ r.reviewed_count }}</div><div class="l">Files reviewed</div></div>
   </div>
 
   <div class="bar">
@@ -104,12 +104,14 @@
       <span class="path">{{ f.path }}</span>
       <span class="fsum">{{ f.summary }}</span>
     </div>
-    {% if f.findings %}
+    {% if f.error %}
+      <div class="empty">Not reviewed: {{ f.error }}</div>
+    {% elif f.findings %}
       {% for fd in f.findings %}
       <div class="finding">
         <div class="finding-h">
-          <span class="sev" style="background:{{ colors[fd.severity.value] }}">{{ fd.severity.value }}</span>
-          <span class="cat">{{ fd.category.value }}</span>
+          <span class="sev" style="background:{{ colors[fd.severity] }}">{{ fd.severity }}</span>
+          <span class="cat">{{ fd.category }}</span>
           {% if fd.line %}<span class="loc">line {{ fd.line }}</span>{% endif %}
           <div class="ftitle">{{ fd.title }}</div>
         </div>

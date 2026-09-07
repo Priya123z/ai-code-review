@@ -1,12 +1,9 @@
-"""Render a validated Report into report.json + a self-contained report.html."""
-from __future__ import annotations
-
+"""Render a report into report.json and a self-contained index.html."""
 import os
-from typing import Dict
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-from .schema import Report, Severity
+from . import schema
 
 _TEMPLATE_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "templates")
 
@@ -19,41 +16,33 @@ SEVERITY_COLORS = {
 }
 
 
-def _env() -> Environment:
+def render_html(report, max_critical=0, max_high=3):
     env = Environment(
         loader=FileSystemLoader(_TEMPLATE_DIR),
         autoescape=select_autoescape(["html", "xml"]),
     )
-    return env
-
-
-def render_html(report: Report) -> str:
-    env = _env()
-    template = env.get_template("report.html.j2")
-    return template.render(
+    return env.get_template("report.html.j2").render(
         r=report,
-        breakdown=report.severity_breakdown,
+        breakdown=report["severity_breakdown"],
         colors=SEVERITY_COLORS,
-        severities=[s.value for s in Severity],
-        total_findings=len(report.all_findings),
-        total_tests=len(report.all_tests),
+        severities=schema.SEVERITIES,
+        gate_failed=schema.gate_fails(report, max_critical, max_high),
+        total_findings=len(schema.all_findings(report)),
+        total_tests=len(schema.all_tests(report)),
     )
 
 
-def write_report(report: Report, out_dir: str) -> Dict[str, str]:
+def write_report(report, out_dir, max_critical=0, max_high=3):
     os.makedirs(out_dir, exist_ok=True)
     json_path = os.path.join(out_dir, "report.json")
-    html_path = os.path.join(out_dir, "report.html")
+    # index.html rather than report.html: a plain directory server, GitHub Pages
+    # included, serves it without being told to. There used to be both, byte for
+    # byte identical.
     index_path = os.path.join(out_dir, "index.html")
 
     with open(json_path, "w", encoding="utf-8") as fh:
-        fh.write(report.model_dump_json(indent=2))
-
-    html = render_html(report)
-    with open(html_path, "w", encoding="utf-8") as fh:
-        fh.write(html)
-    # index.html mirror so a plain directory (GitHub Pages) serves it by default
+        fh.write(schema.to_json(report))
     with open(index_path, "w", encoding="utf-8") as fh:
-        fh.write(html)
+        fh.write(render_html(report, max_critical, max_high))
 
-    return {"json": json_path, "html": html_path, "index": index_path}
+    return {"json": json_path, "html": index_path}

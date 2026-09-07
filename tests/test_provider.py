@@ -1,6 +1,7 @@
 import pytest
 
-from ai_review.providers.openrouter import LLMClient, LLMError, extract_json
+from ai_review.providers.base import LLMError, extract_json
+from ai_review.providers.openrouter import LLMClient
 
 
 def test_extract_plain_json():

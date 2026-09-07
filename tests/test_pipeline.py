@@ -2,6 +2,7 @@ import os
 
 from ai_review.core.config import Config
 from ai_review.core.pipeline import run, run_and_write
+from ai_review.report import schema
 from ai_review.report.render import render_html
 
 EXAMPLE = os.path.join(os.path.dirname(os.path.dirname(__file__)), "examples", "flask_shop")
@@ -10,15 +11,15 @@ EXAMPLE = os.path.join(os.path.dirname(os.path.dirname(__file__)), "examples", "
 def test_pipeline_runs_with_fake_client(fake_client):
     cfg = Config(target=EXAMPLE, max_files=5)
     report = run(cfg, client=fake_client)
-    assert report.files, "should have analyzed at least one file"
-    assert len(report.all_findings) >= 1
-    assert report.risk_score > 0
+    assert report["files"], "should have analyzed at least one file"
+    assert len(schema.all_findings(report)) >= 1
+    assert report["risk_score"] > 0
 
 
 def test_run_and_write_creates_artifacts(fake_client, tmp_path):
     cfg = Config(target=EXAMPLE, out_dir=str(tmp_path), max_files=3)
     report, paths = run_and_write(cfg, client=fake_client)
-    for key in ("json", "html", "index"):
+    for key in ("json", "html"):
         assert os.path.exists(paths[key])
     html = open(paths["html"], encoding="utf-8").read()
     assert "Code review report" in html
@@ -41,6 +42,6 @@ def test_analyzer_survives_malformed_finding():
     cfg = Config(target=EXAMPLE, max_files=1)
     report = run(cfg, client=client)
     # the malformed finding is dropped, the valid one survives
-    titles = [f.title for f in report.all_findings]
+    titles = [f["title"] for f in schema.all_findings(report)]
     assert "valid finding" in titles
     assert len(titles) == 1
