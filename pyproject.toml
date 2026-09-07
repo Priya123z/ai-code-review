@@ -13,20 +13,11 @@ authors = [{ name = "Priya Bhagoriya", email = "prbhagoriya20@gmail.com" }]
 keywords = ["qa", "testing", "ai", "llm", "ci-cd", "code-review", "playwright", "pytest"]
 dependencies = [
   "requests>=2.28",
-  "pydantic>=2.5",
   "jinja2>=3.1",
 ]
 
 [project.optional-dependencies]
-# fastapi and httpx are here because tests/test_server.py exercises the HTTP
-# layer through TestClient. Without them the suite does not even collect, which
-# is what a fresh clone hit while this said pytest and pytest-cov only.
-dev = [
-  "pytest>=7.4",
-  "pytest-cov>=4.1",
-  "fastapi>=0.110",
-  "httpx>=0.24",
-]
+dev = ["pytest>=7.4"]
 
 [project.scripts]
 ai-review = "ai_review.cli:main"
@@ -44,5 +35,5 @@ ai_review = ["templates/*.j2"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 # No -q here. It used to be, which meant anyone typing `pytest -q` got -qq and
-# the summary line vanished: 45 dots and no "45 passed", which reads like the
-# suite did nothing.
+# the summary line vanished: dots and no "N passed", which reads like the suite
+# did nothing.
