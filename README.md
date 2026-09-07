@@ -129,18 +129,26 @@ Both published copies are snapshots of one run, not live output. `pr-report/` is
 so it will not always match the comment currently on #2, and that is worth being
 precise about rather than glossing.
 
-Scanning that same unchanged diff four times found:
+Scanning that same unchanged diff repeatedly:
 
 | | |
 |---|---|
-| every run | the mutable default, the unguarded division, and the `max()` on a possibly-empty sequence |
-| varying | a fourth finding about unvalidated percent values, present in three runs of four |
-| varying | the grading. Those first three came back `high/medium/low`, then `high/critical/critical`, then `high/high/high` |
+| stable | the mutable default, the unguarded division, and the `max()` on a possibly-empty sequence. Every run flags all three |
+| unstable | a fourth finding, about unvalidated percent values, appears in some runs and not others |
+| unstable | the grading. The same three defects have come back anywhere from medium to critical |
 
-So the defects it finds are reproducible and the severities are not. That is the
-honest shape of the tool: treat it as a list of things to look at, and do not
-wire `--fail-on-gate --max-critical 0` to it expecting a stable verdict, because
-the same code passed and failed that gate on different runs.
+So what it finds is reproducible and how it ranks what it finds is not. Two runs
+over identical code, three days apart, are the clearest way to say it:
+[run 34097350350](https://github.com/Priya123z/ai-code-review/actions/runs/34097350350)
+scored `risk 250` with two criticals, and
+[run 34098350985](https://github.com/Priya123z/ai-code-review/actions/runs/34098350985)
+scored `risk 120` with none.
+
+That is the shape of the tool, and it is the reason `--fail-on-gate` is off in
+this repository's own workflow. Pointed at `--max-critical 0`, that same
+unchanged file would have failed the first run and passed the second. Use it as
+a list of things to look at; gate on it only once you have watched what it
+flags on your code for a while, which is what the bullet above recommends.
 
 ## As an API
 
