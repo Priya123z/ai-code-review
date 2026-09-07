@@ -4,8 +4,8 @@ name: deploy pages
 # Both are real output from the reviewer, committed rather than generated here, so
 # the public demo works even without any secret configured:
 #
-#   /report/       sample-report/, the whole flask_shop demo module
-#   /report/pr-2/  pr-report/, the diff-scoped review from pull request #2
+#   /report/     sample-report/, the whole flask_shop demo module
+#   /report/pr/  pr-report/, the diff-scoped review from the demo pull request
 #
 # The second one exists because a run artifact expires after 14 days and needs a
 # signed-in account to download, which is no use as the worked example the README
@@ -39,14 +39,18 @@ jobs:
 
       - name: Assemble public site
         run: |
-          mkdir -p public/report/pr-2
+          mkdir -p public/report/pr
           cp -r site/* public/
           cp -r sample-report/* public/report/
-          cp -r pr-report/* public/report/pr-2/
+          cp -r pr-report/* public/report/pr/
           # sync_metrics.py is a build step, not part of the site it builds.
           rm -f public/sync_metrics.py
 
+      # enablement turns Pages on for a repository that has never published.
+      # Without it the first run fails with "Get Pages site failed".
       - uses: actions/configure-pages@v5
+        with:
+          enablement: true
       - uses: actions/upload-pages-artifact@v3
         with:
           path: public
