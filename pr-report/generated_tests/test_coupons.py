@@ -9,17 +9,9 @@ def test_couponbook_independent_instances():
 
 def test_average_discount_empty():
     cb = CouponBook()
-    assert cb.average_discount(100) == 0
+    assert cb.average_discount(100) == 0.0
 
-def test_apply_best_coupon_empty():
+def test_apply_best_coupon_empty_list():
     total = 200
-    assert apply_best_coupon(total, []) == total
-
-import pytest
-
-def test_add_invalid_percent():
-    cb = CouponBook()
-    with pytest.raises(ValueError):
-        cb.add('BAD', -5)
-    with pytest.raises(ValueError):
-        cb.add('OVER', 150)
+    result = apply_best_coupon(total, [])
+    assert result == total

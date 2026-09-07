@@ -30,6 +30,10 @@ human one, with the boring findings already written down.
   what you changed, so the boring findings (a mutable default, an unguarded
   division, a missing negative-path test) are already written down before a
   human spends attention on them.
+  [Pull request #1](https://github.com/Priya123z/ai-code-review/pull/1) is that
+  claim as a worked example: a branch adding a coupon module, the comment the
+  reviewer left on it, and the
+  [report it produced](https://priya123z.github.io/ai-code-review/report/pr/).
 - **On a repository nobody has reviewed in a year.** Run it over a directory and
   read the report as a triage list. It is unusually good at spotting where tests
   do not exist, because that is a structural question rather than a judgement
@@ -96,7 +100,8 @@ that answers "0 findings" when it never looked is worse than one that says so.
 
 This repository runs itself that way, and
 [`.github/workflows/code-review.yml`](.github/workflows/code-review.yml) is the
-working copy.
+working copy. [#1](https://github.com/Priya123z/ai-code-review/pull/1) is a live
+one: three findings on the one file that branch touched.
 
 ### Where the reports go
 
@@ -109,12 +114,13 @@ which is what the links point at:
 | | |
 |---|---|
 | [/report/](https://priya123z.github.io/ai-code-review/report/) | `sample-report/`, the whole demo module: 3 files, 16 findings, risk 483 |
-| [/report/pr/](https://priya123z.github.io/ai-code-review/report/pr/) | `pr-report/`, the diff-scoped review of a pull request: the one file that branch touched |
+| [/report/pr/](https://priya123z.github.io/ai-code-review/report/pr/) | `pr-report/`, the diff-scoped review from [#1](https://github.com/Priya123z/ai-code-review/pull/1): the one file that branch touched |
 
 ### How stable this is
 
-Both published copies are snapshots of one run, not live output, so neither will
-always match the comment currently on a pull request. That is worth being
+Both published copies are snapshots of one run, not live output. `pr-report/` is
+[run 34113957852](https://github.com/Priya123z/ai-code-review/actions/runs/34113957852),
+so it will not always match the comment currently on #1, and that is worth being
 precise about rather than glossing.
 
 Scanning the same unchanged diff repeatedly:
@@ -127,7 +133,8 @@ Scanning the same unchanged diff repeatedly:
 
 So what it finds is reproducible and how it ranks what it finds is not. Two runs
 over identical code have scored `risk 250` with two criticals and `risk 120`
-with none.
+with none. The published copy is one of the `risk 120` runs: the same three
+defects, all graded high.
 
 That is the reason `--fail-on-gate` is off in this repository's own workflow.
 Pointed at `--max-critical 0`, that same unchanged file would have failed the
