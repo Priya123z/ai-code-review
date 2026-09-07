@@ -3,9 +3,12 @@
 When a UI test fails because a selector no longer matches, the fix is usually
 mechanical: the element is still on the page, just addressed differently. This
 asks the model to repair a broken selector against the *current* DOM and return
-a resilient, Playwright-ready locator (preferring role/text/test-id over brittle
-CSS paths). It's the "self-healing test" idea from my resume, scoped to one
-honest, verifiable step, and the engineer still reviews the suggestion.
+a resilient, Playwright-ready locator, preferring role, text and test-id over a
+brittle CSS path.
+
+Scoped to one step on purpose. "Self-healing tests" usually means a suite that
+rewrites itself, which hides the fact that the page changed. This suggests a
+locator and stops; the engineer still reads it and commits it.
 """
 PROMPT_VERSION = "selfheal-v1"
 
@@ -28,6 +31,9 @@ Return ONLY JSON:
   "locator": "the raw selector or accessible name",
   "playwright": "page.get_by_role('button', name='Save')",
   "confidence": 0.0, "reasoning": "one sentence"}}"""
+
+
+FIELDS = ("found", "strategy", "locator", "playwright", "confidence", "reasoning")
 
 
 def _result(found=False, strategy="css", locator="", playwright="", confidence=0.0, reasoning=""):
@@ -53,6 +59,6 @@ def heal_locator(client, selector, html, description=""):
         ),
     )
     try:
-        return _result(**{k: v for k, v in data.items() if k in _result()})
+        return _result(**{k: v for k, v in data.items() if k in FIELDS})
     except Exception:
         return _result(reasoning="Model returned an unparseable suggestion.")

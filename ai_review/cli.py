@@ -19,7 +19,7 @@ def _build_parser():
     scan = sub.add_parser("scan", help="Analyze a path and write an HTML/JSON report.")
     scan.add_argument("target", nargs="?", default=".", help="File or directory to analyze (default: .)")
     scan.add_argument("--out", default="report", help="Output directory (default: report/)")
-    scan.add_argument("--model", default=None, help="OpenRouter model slug (or set AI_REVIEW_MODEL)")
+    scan.add_argument("--model", default=None, help="Model slug for whichever provider it belongs to (or set AI_REVIEW_MODEL)")
     scan.add_argument("--diff", action="store_true", help="Only analyze files changed vs the diff base")
     scan.add_argument("--diff-base", default=None, help="Git ref to diff against (default: origin/main)")
     scan.add_argument("--max-files", type=int, default=None, help="Cap number of files analyzed")

@@ -1,12 +1,13 @@
 """Lightweight retrieval-augmented context.
 
-Before reviewing a file, we give the model a compact map of the *other* modules
-in the change set: their classes and function signatures. That cross-file
-context is what lets the review catch integration defects a single-file linter
-never could (e.g. "payments.process_order never verifies the token that
-auth.current_user issues"). It's RAG in miniature: retrieve related code, then
-augment the generation prompt with it, no vector DB required for a change set
-this size.
+Before reviewing a file, the model gets a compact map of the *other* modules in
+the change set: their classes and function signatures. That cross-file context
+is what lets the review catch an integration defect a single-file linter never
+could, of the shape "payments.process_order never verifies the token that
+auth.current_user issues".
+
+Retrieve the related code, then put it in the prompt. No vector database, for a
+change set this size.
 """
 import re
 

@@ -64,7 +64,7 @@ one that matters.
 ## Quick start
 
 ```bash
-pip install -e .
+pip install -e ".[dev]"                # dev adds pytest, so the suite runs too
 
 export GROQ_API_KEY=gsk_...            # free key: console.groq.com/keys
 ai-review scan ./src --out report/
@@ -173,14 +173,18 @@ and the CLI exits `2`.
 
 ```
 ai_review/
-  cli.py                  argparse entry point
-  core/       config, collector, pipeline
-  providers/  base, groq, openrouter, chain      the only code that does HTTP
-  analyzers/  defects, selfheal, context         prompts live here
-  report/     schema, render, emit
-  templates/  report.html.j2
-site/         the landing page, published to Pages with the two reports
-tests/        32 tests, no API key needed
+  cli.py        argparse entry point
+  core/         config, collector, pipeline
+  providers/    base, groq, openrouter, chain     the only code that does HTTP
+  analyzers/    defects, selfheal, context        prompts live here
+  report/       schema, render, emit
+  templates/    report.html.j2
+action.yml      the composite GitHub Action
+examples/       flask_shop, the deliberately buggy module the demo scans
+sample-report/  a committed run over that module, published at /report/
+pr-report/      a committed run over pull request #1, published at /report/pr/
+site/           the landing page, published alongside both reports
+tests/          32 tests, no API key needed
 ```
 
 A report is a plain dict, built by the functions in `report/schema.py`. What the
@@ -198,7 +202,6 @@ the suite once already.
 ## Tests
 
 ```bash
-pip install -e ".[dev]"
 pytest -q          # 32 passed, no API key required
 ```
 
