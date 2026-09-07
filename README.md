@@ -106,7 +106,7 @@ working copy. Two pull requests show both outcomes:
 
 | | | |
 |---|---|---|
-| [#2](https://github.com/Priya123z/ai-code-review/pull/2) | a real code diff, four findings on one file | [report](https://priya123z.github.io/ai-code-review/report/pr-2/) |
+| [#2](https://github.com/Priya123z/ai-code-review/pull/2) | a real code diff, scoped to the one file it touched | [report](https://priya123z.github.io/ai-code-review/report/pr-2/) |
 | [#1](https://github.com/Priya123z/ai-code-review/pull/1) | a docs-and-workflow diff, nothing to review | no report, nothing was scanned |
 
 ### Where the reports go
@@ -120,17 +120,27 @@ published, which is what the links point at:
 | | |
 |---|---|
 | [/report/](https://priya123z.github.io/ai-code-review/report/) | `sample-report/`, the whole demo module: 3 files, 16 findings |
-| [/report/pr-2/](https://priya123z.github.io/ai-code-review/report/pr-2/) | `pr-report/`, the diff-scoped review from #2: 1 file, 4 findings |
+| [/report/pr-2/](https://priya123z.github.io/ai-code-review/report/pr-2/) | `pr-report/`, the diff-scoped review from #2: the one file that branch touched |
 
-Both published copies are snapshots of a particular run, not live output.
-`pr-report/` is from
-[run 34097350350](https://github.com/Priya123z/ai-code-review/actions/runs/34097350350).
-Re-running the scan over the same diff finds the same four things but does not
-always grade them the same way; that run called two of them critical where an
-earlier one called them medium and low. The model is not deterministic, so a
-snapshot and a fresh comment can disagree about severity even when they agree
-about the code. Worth knowing before wiring `--fail-on-gate` to a critical
-threshold.
+### How stable this is
+
+Both published copies are snapshots of one run, not live output. `pr-report/` is
+[run 34097350350](https://github.com/Priya123z/ai-code-review/actions/runs/34097350350),
+so it will not always match the comment currently on #2, and that is worth being
+precise about rather than glossing.
+
+Scanning that same unchanged diff four times found:
+
+| | |
+|---|---|
+| every run | the mutable default, the unguarded division, and the `max()` on a possibly-empty sequence |
+| varying | a fourth finding about unvalidated percent values, present in three runs of four |
+| varying | the grading. Those first three came back `high/medium/low`, then `high/critical/critical`, then `high/high/high` |
+
+So the defects it finds are reproducible and the severities are not. That is the
+honest shape of the tool: treat it as a list of things to look at, and do not
+wire `--fail-on-gate --max-critical 0` to it expecting a stable verdict, because
+the same code passed and failed that gate on different runs.
 
 ## As an API
 
@@ -251,6 +261,8 @@ malformed model output being dropped without sinking the rest of the file.
 - Sibling context is regex-extracted signatures, not a real index. It catches
   obvious mismatches, not deep call-graph problems.
 - Two runs on the same file can differ. That is the nature of it, which is why
-  the tests assert on properties rather than on exact output.
+  the tests assert on properties rather than on exact output. [How stable this
+  is](#how-stable-this-is) measures it on one unchanged diff: the defects
+  repeated across four runs, the severities did not.
 
 MIT.
