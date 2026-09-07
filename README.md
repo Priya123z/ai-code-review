@@ -3,10 +3,10 @@
 Reads your changed files with an LLM and tells you what is likely to break, which
 tests are missing, and how to fix a Playwright locator that stopped matching.
 
-Runs three ways: a CLI, a GitHub Action, and an HTTP API.
+Runs two ways: a CLI, and a GitHub Action that reviews a pull request's diff.
 
-[**Try it in a browser**](https://priya123z.github.io/#demos): no install, no key needed ·
-[Sample report](https://priya123z.github.io/ai-code-review/report/)
+[**Sample report**](https://priya123z.github.io/ai-code-review/report/) ·
+[try the same three prompts in a browser](https://priya123z.github.io/#demos), no install and no key
 
 [![Tests](https://github.com/Priya123z/ai-code-review/actions/workflows/tests.yml/badge.svg)](https://github.com/Priya123z/ai-code-review/actions/workflows/tests.yml)
 [![Review](https://github.com/Priya123z/ai-code-review/actions/workflows/code-review.yml/badge.svg)](https://github.com/Priya123z/ai-code-review/actions/workflows/code-review.yml)
@@ -27,14 +27,9 @@ human one, with the boring findings already written down.
 ## When you would reach for this
 
 - **Before you open a pull request.** `ai-review scan . --diff` looks only at
-  what you changed. The point is that the boring findings (a mutable default, an
-  unguarded division, a missing negative-path test) are already written down
-  before a human spends attention on them.
-  [Pull request #2](https://github.com/Priya123z/ai-code-review/pull/2) is that
-  claim as a worked example: a feature branch adding a coupon module, the comment
-  the reviewer left on it, and the
-  [report it produced](https://priya123z.github.io/ai-code-review/report/pr-2/).
-  Those three findings are the first three in the comment.
+  what you changed, so the boring findings (a mutable default, an unguarded
+  division, a missing negative-path test) are already written down before a
+  human spends attention on them.
 - **On a repository nobody has reviewed in a year.** Run it over a directory and
   read the report as a triage list. It is unusually good at spotting where tests
   do not exist, because that is a structural question rather than a judgement
@@ -46,9 +41,6 @@ human one, with the boring findings already written down.
 - **As a gate on a repo where nobody reviews test coverage.**
   `--fail-on-gate` fails the build over a configurable count of critical and
   high findings. Start with it off and watch what it flags for a week first.
-- **As a shared service for a team.** `server/` is the same three capabilities
-  over HTTP, so one instance answers for everyone rather than each person
-  installing a CLI and finding their own key.
 
 Where **not** to use it: as the review. It has no idea what your product is
 supposed to do, so it cannot tell you a feature is wrong, only that a line of
@@ -61,7 +53,7 @@ one that matters.
 |---|---|
 | **Finds defects** | Severity, category, line, why it matters, and a suggested fix |
 | **Writes the missing tests** | Gherkin scenarios and pytest skeletons, emitted as real files |
-| **Repairs locators** | A selector that no longer matches plus the current markup, in, a working Playwright locator out |
+| **Repairs locators** | A selector that no longer matches, plus the current markup, in; a working Playwright locator out |
 | **Gates the build** | Weighted risk score with configurable critical and high thresholds |
 | **Reads siblings** | Function and class signatures from neighbouring files, so cross-file mistakes are visible |
 
@@ -99,37 +91,33 @@ ai-review heal --selector "#pay-now" --html page.html
 With `diff: "true"` on a `pull_request` trigger, the scan is scoped to the files
 the branch touched and the findings are posted as a single comment, edited in
 place on each push rather than appended. A branch that changes no reviewable
-source is reported as having nothing to review, and no model call is made.
+source is reported as having nothing to review, and no model call is made: a bot
+that answers "0 findings" when it never looked is worse than one that says so.
 
-This repository runs itself that way; `.github/workflows/code-review.yml` is the
-working copy. Two pull requests show both outcomes:
-
-| | | |
-|---|---|---|
-| [#2](https://github.com/Priya123z/ai-code-review/pull/2) | a real code diff, scoped to the one file it touched | [report](https://priya123z.github.io/ai-code-review/report/pr-2/) |
-| [#1](https://github.com/Priya123z/ai-code-review/pull/1) | a docs-and-workflow diff, nothing to review | no report, nothing was scanned |
+This repository runs itself that way, and
+[`.github/workflows/code-review.yml`](.github/workflows/code-review.yml) is the
+working copy.
 
 ### Where the reports go
 
 Each run uploads the HTML report as a workflow artifact named
 `code-review-report`, found at the bottom of the run summary page, or with
 `gh run download <run-id> -n code-review-report`. Artifacts expire after 14 days
-and need a signed-in account, so the two reports above are also committed and
-published, which is what the links point at:
+and need a signed-in account, so two reports are also committed and published,
+which is what the links point at:
 
 | | |
 |---|---|
-| [/report/](https://priya123z.github.io/ai-code-review/report/) | `sample-report/`, the whole demo module: 3 files, 16 findings |
-| [/report/pr-2/](https://priya123z.github.io/ai-code-review/report/pr-2/) | `pr-report/`, the diff-scoped review from #2: the one file that branch touched |
+| [/report/](https://priya123z.github.io/ai-code-review/report/) | `sample-report/`, the whole demo module: 3 files, 16 findings, risk 483 |
+| [/report/pr/](https://priya123z.github.io/ai-code-review/report/pr/) | `pr-report/`, the diff-scoped review of a pull request: the one file that branch touched |
 
 ### How stable this is
 
-Both published copies are snapshots of one run, not live output. `pr-report/` is
-[run 34097350350](https://github.com/Priya123z/ai-code-review/actions/runs/34097350350),
-so it will not always match the comment currently on #2, and that is worth being
+Both published copies are snapshots of one run, not live output, so neither will
+always match the comment currently on a pull request. That is worth being
 precise about rather than glossing.
 
-Scanning that same unchanged diff repeatedly:
+Scanning the same unchanged diff repeatedly:
 
 | | |
 |---|---|
@@ -138,85 +126,30 @@ Scanning that same unchanged diff repeatedly:
 | unstable | the grading. The same three defects have come back anywhere from medium to critical |
 
 So what it finds is reproducible and how it ranks what it finds is not. Two runs
-over identical code, three days apart, are the clearest way to say it:
-[run 34097350350](https://github.com/Priya123z/ai-code-review/actions/runs/34097350350)
-scored `risk 250` with two criticals, and
-[run 34098350985](https://github.com/Priya123z/ai-code-review/actions/runs/34098350985)
-scored `risk 120` with none.
+over identical code have scored `risk 250` with two criticals and `risk 120`
+with none.
 
-That is the shape of the tool, and it is the reason `--fail-on-gate` is off in
-this repository's own workflow. Pointed at `--max-critical 0`, that same
-unchanged file would have failed the first run and passed the second. Use it as
-a list of things to look at; gate on it only once you have watched what it
-flags on your code for a while, which is what the bullet above recommends.
-
-## As an API
-
-`server/` is a FastAPI app exposing the same three capabilities over HTTP, for
-when you want one instance shared across a team rather than everyone running the
-CLI.
-
-This particular service is not deployed anywhere. Hugging Face made Docker
-Spaces a paid feature partway through building it, and paying for a demo was not
-worth it. It is still here, still tested, and the Dockerfile runs anywhere;
-`server/deploy-space.sh` pushes it to a Space if you have PRO.
-
-The browser demos on the portfolio are served by something smaller instead: a
-Cloudflare Worker holding a Groq key as a secret, on the free plan, so a visitor
-gets a live answer without being asked to sign up for anything. It reimplements
-the same three prompts in JavaScript rather than importing this package, and it
-lives
-[in the portfolio repository](https://github.com/Priya123z/Priya123z.github.io/tree/main/worker).
-Reach for `server/` when you want the real pipeline (cross-file context, the
-gate, emitted test files) behind an HTTP boundary for a team. Reach for the
-Worker when you want three prompts answered on a static page for nothing.
-
-```bash
-pip install -r server/requirements.txt
-uvicorn server.app:app --port 8000
-```
-
-```
-POST /api/review   { code, filename }        → defects + suggested tests
-POST /api/specs    { story }                 → Gherkin + pytest
-POST /api/heal     { selector, html }        → a locator that works
-GET  /api/health                             → configured providers
-GET  /api/quota                              → what is left of today's budget
-```
-
-Run it locally with the commands above, or build the image:
-
-```bash
-docker build -f server/Dockerfile -t ai-review-api .
-docker run -p 7860:7860 -e GROQ_API_KEY=gsk_... ai-review-api
-```
-
-`./server/deploy-space.sh <hf-username>` pushes it to a Hugging Face Space, which
-needs a PRO subscription for Docker SDK spaces.
+That is the reason `--fail-on-gate` is off in this repository's own workflow.
+Pointed at `--max-critical 0`, that same unchanged file would have failed the
+first run and passed the second. Use it as a list of things to look at; gate on
+it only once you have watched what it flags on your code for a while.
 
 ## Running on a free tier
 
-This is most of the engineering, so it is worth being explicit.
-
 Groq's free tier allows 30 requests a minute, 1000 a day, 8000 tokens a minute
-and 200k a day. **Tokens per minute is what binds**: a couple of 2000-token
-reviews exhaust the minute long before they get near 30 requests. So the budget
-is counted in tokens, and a request is refused before it is sent rather than
-after a 429 comes back.
+and 200k a day. Tokens per minute is what binds: a couple of 2000-token reviews
+exhaust the minute long before they get near 30 requests.
 
-Providers are tried in order: Groq, then OpenRouter, then a saved response. Two
-OpenRouter free models returned 429 on the very first call while this was being
-written, which is why there is a chain at all rather than one provider and hope.
-
-When the budget is spent the API answers `200` with a pre-generated example
-labelled `"source": "cached"`. It does not pretend to be live, and it does not
-return a 500, because a dead demo teaches a visitor nothing. Anyone who wants unlimited
-runs sends their own key in `X-API-Key` and skips the budget entirely.
+So there is a chain rather than one provider and hope. Groq is tried first, then
+its own smaller models, then OpenRouter. Two OpenRouter free models returned 429
+on the very first call while this was being written, which is why the fallback
+goes sideways as well as down.
 
 **It will not tell you your code is fine when it could not read it.** A provider
 outage used to produce zero findings and a passing gate, which is
-indistinguishable from clean code. Files that fail now carry an error, the gate
-fails if nothing was reviewed, and the CLI exits `2`.
+indistinguishable from clean code. Files that fail now carry an error, the report
+says so instead of "no defects flagged", the gate fails if nothing was reviewed,
+and the CLI exits `2`.
 
 ## Configuration
 
@@ -228,7 +161,6 @@ fails if nothing was reviewed, and the CLI exits `2`.
 | `AI_REVIEW_MAX_FILES` | `12` | Cap per run |
 | `AI_REVIEW_MAX_CRITICAL` | `0` | Gate threshold |
 | `AI_REVIEW_MAX_HIGH` | `3` | Gate threshold |
-| `ALLOWED_ORIGINS` | the portfolio origin | CORS, server only |
 
 ## Layout
 
@@ -237,12 +169,18 @@ ai_review/
   cli.py                  argparse entry point
   core/       config, collector, pipeline
   providers/  base, groq, openrouter, chain      the only code that does HTTP
-  analyzers/  defects, specs, selfheal, context  prompts live here
-  report/     schema, render, emit               Pydantic contracts
+  analyzers/  defects, selfheal, context         prompts live here
+  report/     schema, render, emit
   templates/  report.html.j2
-server/       app, quota, cache, samples, Dockerfile
-tests/        45 tests, no API key needed
+site/         the landing page, published to Pages with the two reports
+tests/        32 tests, no API key needed
 ```
+
+A report is a plain dict, built by the functions in `report/schema.py`. What the
+pipeline assembles, what lands in `report.json` and what the template renders are
+all the same shape, so there is nothing to keep in sync and nothing to serialise.
+The five derived numbers, risk score included, are written into the dict, which
+is how CI thresholds on the file without importing this package.
 
 The LLM is reachable only through one `chat(system, user, as_json)` method. That
 is what lets the whole suite run offline: tests substitute that one method and
@@ -254,13 +192,14 @@ the suite once already.
 
 ```bash
 pip install -e ".[dev]"
-pytest -q          # 45 passed, no API key required
-# last local run: 45 passed
+pytest -q          # 32 passed, no API key required
 ```
 
-Covers the provider chain falling through and exhausting, quota refusal and
-per-visitor limits, the cached fallback, own-key bypass, input truncation, and
-malformed model output being dropped without sinking the rest of the file.
+Covers the provider chain falling through and exhausting, model precedence
+between `--model` and the environment, JSON extraction from fenced and prose
+responses, the gate refusing to pass a run that reviewed nothing, malformed
+model output being dropped without sinking the rest of the file, and the
+context, heal and emit capabilities.
 
 ## Honest limitations
 
@@ -271,6 +210,6 @@ malformed model output being dropped without sinking the rest of the file.
 - Two runs on the same file can differ. That is the nature of it, which is why
   the tests assert on properties rather than on exact output. [How stable this
   is](#how-stable-this-is) measures it on one unchanged diff: the defects
-  repeated across four runs, the severities did not.
+  repeated, the severities did not.
 
 MIT.
