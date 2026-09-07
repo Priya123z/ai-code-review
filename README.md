@@ -31,9 +31,10 @@ human one, with the boring findings already written down.
   unguarded division, a missing negative-path test) are already written down
   before a human spends attention on them.
   [Pull request #2](https://github.com/Priya123z/ai-code-review/pull/2) is that
-  claim as a worked example: a feature branch adding a coupon module, and the
-  comment the reviewer left on it. Those three findings are the first three in
-  the comment.
+  claim as a worked example: a feature branch adding a coupon module, the comment
+  the reviewer left on it, and the
+  [report it produced](https://priya123z.github.io/ai-code-review/report/pr-2/).
+  Those three findings are the first three in the comment.
 - **On a repository nobody has reviewed in a year.** Run it over a directory and
   read the report as a triage list. It is unusually good at spotting where tests
   do not exist, because that is a structural question rather than a judgement
@@ -103,10 +104,23 @@ source is reported as having nothing to review, and no model call is made.
 This repository runs itself that way; `.github/workflows/code-review.yml` is the
 working copy. Two pull requests show both outcomes:
 
+| | | |
+|---|---|---|
+| [#2](https://github.com/Priya123z/ai-code-review/pull/2) | a real code diff, four findings on one file | [report](https://priya123z.github.io/ai-code-review/report/pr-2/) |
+| [#1](https://github.com/Priya123z/ai-code-review/pull/1) | a docs-and-workflow diff, nothing to review | no report, nothing was scanned |
+
+### Where the reports go
+
+Each run uploads the HTML report as a workflow artifact named
+`code-review-report`, found at the bottom of the run summary page, or with
+`gh run download <run-id> -n code-review-report`. Artifacts expire after 14 days
+and need a signed-in account, so the two reports above are also committed and
+published, which is what the links point at:
+
 | | |
 |---|---|
-| [#2](https://github.com/Priya123z/ai-code-review/pull/2) | a real code diff, four findings on one file |
-| [#1](https://github.com/Priya123z/ai-code-review/pull/1) | a docs-and-workflow diff, nothing to review |
+| [/report/](https://priya123z.github.io/ai-code-review/report/) | `sample-report/`, the whole demo module: 3 files, 16 findings |
+| [/report/pr-2/](https://priya123z.github.io/ai-code-review/report/pr-2/) | `pr-report/`, the diff-scoped review from #2: 1 file, 4 findings |
 
 ## As an API
 

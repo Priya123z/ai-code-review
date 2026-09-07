@@ -26,3 +26,6 @@ WALKTHROUGH.local.md
 # against a working tree at a moment in time, and a document that ships with the
 # code but is not updated with it is worse than one that is plainly local.
 DEEP_DIVE.md
+
+# Pages build output, assembled by .github/workflows/pages.yml
+public/

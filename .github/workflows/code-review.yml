@@ -145,6 +145,9 @@ jobs:
           script: |
             const fs = require('fs');
             const marker = '<!-- ai-review-diff -->';
+            const { owner, repo } = context.repo;
+            const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
+            const published = 'https://priya123z.github.io/ai-code-review/report/pr-2/';
             let body;
 
             if (process.env.MODE === 'none') {
@@ -164,10 +167,13 @@ jobs:
               for (const x of f.slice(0, 10)) {
                 body += `- \`${x.severity}\` **${x.title}**: ${x.detail}\n`;
               }
-              body += `\n_Model: ${r.model}. Full HTML report in the run artifacts._\n`;
+              body += `\nFull HTML report: the \`code-review-report\` artifact on `
+                    + `[this run](${runUrl}), which expires after 14 days and needs a `
+                    + `signed-in account. A permanently published example lives at `
+                    + `[/report/pr-2/](${published}).\n`
+                    + `\n_Model: ${r.model}._\n`;
             }
 
-            const { owner, repo } = context.repo;
             const issue_number = context.issue.number;
             const existing = await github.paginate(
               github.rest.issues.listComments, { owner, repo, issue_number });
