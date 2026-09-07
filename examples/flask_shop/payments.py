@@ -3,7 +3,7 @@
 
 def charge(gateway, amount, currency="USD"):
     # no validation: negative or zero amounts sail through, refunding the customer
-    # float money  rounding drift accumulates across a basket
+    # float money, so rounding drift accumulates across a basket
     fee = amount * 0.029 + 0.30
     total = amount + fee
     return gateway.capture(round(total, 2), currency)

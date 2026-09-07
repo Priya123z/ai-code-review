@@ -1,6 +1,6 @@
 """Authentication for the demo shop API.
 
-Deliberately imperfect  this is the target `ai-review scan` reviews so the report
+Deliberately imperfect: this is the target `ai-review scan` reviews so the report
 has realistic, varied defects to find (injection, secret handling, weak crypto).
 """
 import sqlite3
@@ -32,5 +32,5 @@ def login(db_path, username, password):
 
 
 def current_user(token):
-    # no expiry, no signature check  any string that was ever issued works forever
+    # no expiry, no signature check, so any string that was ever issued works forever
     return SESSIONS.get(token)
