@@ -127,7 +127,7 @@
       <div class="card">
         <span class="skill">Prompt engineering · quality gate</span>
         <h3>🚦 A gate you can trust</h3>
-        <p>Versioned prompts, Pydantic-validated output, and one weighted <code>risk_score</code> with a
+        <p>Versioned prompts, normalised output, and one weighted <code>risk_score</code> with a
         pass/fail gate. Block a PR on new criticals, or just report.</p>
       </div>
     </div>
@@ -156,14 +156,16 @@
       <span class="step">Collect changed files</span><span class="arr">→</span>
       <span class="step">+ cross-file context</span><span class="arr">→</span>
       <span class="step">LLM review</span><span class="arr">→</span>
-      <span class="step">Pydantic-validated findings</span><span class="arr">→</span>
+      <span class="step">Normalised findings</span><span class="arr">→</span>
       <span class="step">HTML + JSON report</span><span class="arr">→</span>
       <span class="step">Pages / PR comment / gate</span>
     </div>
     <p style="color:var(--muted);margin-top:18px">
-      Every LLM response is validated through Pydantic before it can reach a report. Malformed or
-      invented output fails at the boundary instead of poisoning results a human later trusts. The full
-      test suite runs green with <b>no API key</b> because the LLM client is mocked.
+      Every LLM response is normalised before it can reach a report: an unknown severity becomes
+      medium, a confidence out of range is clamped, and a finding with neither a title nor a detail is
+      dropped rather than sitting in a report a human later trusts. A file that could not be read at
+      all says so, and the gate fails rather than calling an outage a clean run. The full test suite
+      runs green with <b>no API key</b>, because the LLM client is mocked.
     </p>
   </section>
 
@@ -184,7 +186,7 @@
 <span class="k">$</span> ai-review gen-tests ./src        <span class="c"># just the tests</span>
 <span class="k">$</span> ai-review heal --selector ... --html page.html   <span class="c"># self-heal a locator</span></pre>
     <div style="margin-top:18px">
-      <span class="tag">Python</span><span class="tag">Pydantic v2</span><span class="tag">Pytest</span>
+      <span class="tag">Python</span><span class="tag">Pytest</span>
       <span class="tag">Jinja2</span><span class="tag">Groq</span><span class="tag">OpenRouter fallback</span><span class="tag">GitHub Actions</span>
       <span class="tag">Playwright-ready locators</span>
     </div>
